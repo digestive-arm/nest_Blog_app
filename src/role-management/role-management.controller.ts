@@ -12,6 +12,8 @@ import { RoleManagementService } from './role-management.service';
 import type { Response } from 'express';
 import { UpdateRoleDto } from './dto/upgrade-role.dto';
 import { processRoleApprovalRequestDto } from './dto/process-role.dto';
+import responseUtils from 'src/utils/response.utils';
+import { StatusCodes } from 'http-status-codes';
 
 @Controller('role')
 export class RoleManagementController {
@@ -23,12 +25,9 @@ export class RoleManagementController {
     try {
       const result = await this.roleManagementService.getMyRequests(userId);
 
-      return res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      res.status(500).json(error);
+      responseUtils.success(res, { data: result, status: StatusCodes.OK });
+    } catch (error: AnyType) {
+      responseUtils.error({ res, error });
     }
   }
 
@@ -49,11 +48,9 @@ export class RoleManagementController {
         userId,
       );
 
-      return res.status(201).json({
-        success: true,
-      });
+      responseUtils.success(res, { data: null, status: StatusCodes.OK });
     } catch (error) {
-      res.status(500).json(error);
+      responseUtils.error({ res, error });
     }
   }
   //get pending reqests
@@ -61,12 +58,9 @@ export class RoleManagementController {
   async getPendingRequest(@Res() res: Response) {
     try {
       const result = await this.roleManagementService.getPendingRequest();
-      return res.status(200).json({
-        success: true,
-        data: result,
-      });
+      responseUtils.success(res, { data: result, status: StatusCodes.OK });
     } catch (error) {
-      res.status(500).json(error);
+      responseUtils.error({ res, error });
     }
   }
   //approve / reject request
@@ -82,12 +76,12 @@ export class RoleManagementController {
         roleApprovalRequestId,
       );
 
-      return res.status(200).json({
-        success: true,
-        message: 'Role updation requst has been processed',
+      responseUtils.success(res, {
+        data: null,
+        status: StatusCodes.OK,
       });
     } catch (error) {
-      res.status(500).json(error);
+      responseUtils.error({ res, error });
     }
   }
 }

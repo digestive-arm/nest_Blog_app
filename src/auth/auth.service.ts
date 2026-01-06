@@ -7,13 +7,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { AuthUtils } from 'src/utils/auth.utils';
 import { Repository } from 'typeorm';
-import { createUserParams } from '../user/dto/create-user.dto';
-import { loginUserParams } from '../user/dto/login-user.dto';
-
-interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-}
+import {
+  createUserParams,
+  loginUserParams,
+  AuthResponse,
+  TokenPayload,
+} from './auth-types';
 
 @Injectable()
 export class AuthService {
@@ -24,8 +23,8 @@ export class AuthService {
   //login endpoint
   async login(loginUserParams: loginUserParams): Promise<AuthResponse> {
     const user = await this.userRepository.findOne({
-      select: ['email', 'password'],
       where: { email: loginUserParams.email },
+      select: ['email', 'password', 'id', 'role'],
     });
 
     if (!user) {
@@ -41,15 +40,14 @@ export class AuthService {
       throw new UnauthorizedException('You entered wrong password');
     }
 
-    const accessToken = this.authUtils.generateAccessToken({
-      email: loginUserParams.email,
-      password: loginUserParams.password,
-    });
+    const tokenPayload: TokenPayload = {
+      email: user.email,
+      id: user.id,
+      role: user.role,
+    };
 
-    const refreshToken = this.authUtils.generateRefreshToken({
-      email: loginUserParams.email,
-      password: loginUserParams.password,
-    });
+    const accessToken = this.authUtils.generateAccessToken(tokenPayload);
+    const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);
 
     user.refreshToken = refreshToken;
     await this.userRepository.update(
@@ -76,17 +74,16 @@ export class AuthService {
   }
 
   async refresh(receivedRefreshToken: string): Promise<AuthResponse> {
-    const userPayload = this.authUtils.decodeToken(receivedRefreshToken);
-    const { email, password } = userPayload;
+    const tokenPayload = this.authUtils.decodeToken(receivedRefreshToken);
 
-    const accessToken = this.authUtils.generateAccessToken({ email, password });
-    const refreshToken = this.authUtils.generateRefreshToken({
-      email,
-      password,
-    });
+   delete tokenPayload["iat"]
+   delete tokenPayload["exp"]
+
+    const accessToken = this.authUtils.generateAccessToken(tokenPayload);
+    const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);
 
     await this.userRepository.update(
-      { email: userPayload.email },
+      { email: tokenPayload.email },
       {
         refreshToken,
       },

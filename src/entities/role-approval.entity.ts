@@ -2,7 +2,7 @@ import { Exclude } from 'class-transformer';
 import { BaseEntity } from 'src/modules/database/base-entity';
 import { User } from 'src/user/entities/user.entity';
 import { userRoles } from 'src/user/user.types';
-import { Column, Entity, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 
 export enum RoleApprovalStatus {
   APPROVED = 'approved',
@@ -13,8 +13,13 @@ export enum RoleApprovalStatus {
 @Entity('role-approvals')
 export class RoleApproval extends BaseEntity {
   @Exclude()
-  @ManyToOne(() => User, (user) => user.roleRequest)
-  user: User;
+  @Column({ nullable: true })
+  userId?: string;
+
+  @Exclude()
+  @ManyToOne('User', { nullable: true })
+  @JoinColumn({ name: 'userId' })
+  user?: User;
 
   @Column({
     nullable: false,

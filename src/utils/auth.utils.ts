@@ -4,13 +4,7 @@ import { ERROR_MESSAGES } from 'src/constants/messages.constants';
 import { secretConfig } from 'src/config/env.config';
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-
-interface verfiedTokenPayload {
-  id: string;
-  email: string;
-  password: string;
-  x;
-}
+import { TokenPayload } from '../auth/auth-types';
 
 @Injectable()
 export class AuthUtils {
@@ -21,16 +15,16 @@ export class AuthUtils {
     return sign(payload, secretConfig.jwtSecretKey, signOptions);
   }
 
-  verifyToken(token: string): verfiedTokenPayload {
+  verifyToken(token: string): TokenPayload {
     try {
-      return <verfiedTokenPayload>verify(token, secretConfig.jwtSecretKey);
+      return <TokenPayload>verify(token, secretConfig.jwtSecretKey);
     } catch (e) {
       console.error(e);
       throw new UnauthorizedException(ERROR_MESSAGES.UNAUTHORIZED);
     }
   }
 
-  decodeToken(authToken: string): verfiedTokenPayload {
+  decodeToken(authToken: string): TokenPayload {
     if (!authToken) {
       throw new UnauthorizedException(ERROR_MESSAGES.UNAUTHORIZED);
     }
@@ -40,12 +34,12 @@ export class AuthUtils {
     return payload;
   }
 
-  generateAccessToken(payload: object): string {
+  generateAccessToken(payload: TokenPayload): string {
     const expiresIn = Number(secretConfig.accessTokenExpirationTime);
     return this.jwtSign(payload, expiresIn);
   }
 
-  generateRefreshToken(payload: object): string {
+  generateRefreshToken(payload: TokenPayload): string {
     const expiresIn = Number(secretConfig.refreshTokenExpirationTime);
     return this.jwtSign(payload, expiresIn);
   }

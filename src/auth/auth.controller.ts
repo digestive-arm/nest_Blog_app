@@ -31,29 +31,33 @@ export class AuthController {
   async register(@Res() res: Response, @Body() user: CreateUserDto) {
     try {
       await this.authService.register(user);
-      return responseUtils.success(res, {
+      responseUtils.success(res, {
         data: { message: 'User created successfully' },
         status: StatusCodes.CREATED,
       });
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      responseUtils.error({ res, error });
     }
   }
 
   @Post('login')
   async login(@Res() res: Response, @Body() user: LoginUserDto) {
     try {
-      const { accessToken, refreshToken } = await this.authService.login(user);
+      const { accessToken, refreshToken } = await this.authService.login({
+        email: user.email,
+        password: user.password,
+      });
 
       res.cookie('refreshToken', refreshToken, refreshTokenConfig);
 
       res.cookie('accessToken', accessToken, accessTokenConfig);
-      return responseUtils.success(res, {
+      responseUtils.success(res, {
         data: { message: 'Logged in successfully' },
         status: StatusCodes.OK,
       });
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      console.log(error);
+      responseUtils.error({ res, error });
     }
   }
 
@@ -74,13 +78,12 @@ export class AuthController {
       res.cookie('refreshToken', refreshToken, refreshTokenConfig);
       res.cookie('accessToken', accessToken, accessTokenConfig);
 
-      return responseUtils.success(res, {
+      responseUtils.success(res, {
         data: { message: 'AccessToken updated' },
         status: StatusCodes.OK,
       });
     } catch (error) {
-      console.log(error);
-      throw new InternalServerErrorException(error);
+      responseUtils.error({ res, error });
     }
   }
 
@@ -89,7 +92,7 @@ export class AuthController {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
 
-    return responseUtils.success(res, {
+    responseUtils.success(res, {
       data: { message: 'Logged-out successfully!' },
       status: StatusCodes.NO_CONTENT,
     });
