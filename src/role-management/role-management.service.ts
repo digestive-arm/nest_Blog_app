@@ -33,7 +33,7 @@ export class RoleManagementService {
 
     const requestExists = await this.roleApprovalRepository.findOne({
       where: {
-        user: { id: user.id },
+        userId: user.id,
         requestedRole,
       },
     });
@@ -44,7 +44,7 @@ export class RoleManagementService {
     const roleUpdationRequest = new RoleApproval();
     roleUpdationRequest.requestedRole = requestedRole;
     roleUpdationRequest.status = RoleApprovalStatus.PENDING;
-    roleUpdationRequest.user = user;
+    roleUpdationRequest.userId = user.id;
 
     await this.roleApprovalRepository.save(roleUpdationRequest);
   }
@@ -60,9 +60,7 @@ export class RoleManagementService {
     }
 
     const result = await this.roleApprovalRepository.findBy({
-      user: {
-        id: userId,
-      },
+      userId,
     });
 
     if (result.length === 0) {
@@ -113,7 +111,7 @@ export class RoleManagementService {
     if (isApproved) {
       await this.userRepository.update(
         {
-          id: requestExists.user.id,
+          id: requestExists.userId,
         },
         {
           role: requestExists.requestedRole,

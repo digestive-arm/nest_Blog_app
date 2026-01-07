@@ -1,4 +1,3 @@
-import { Exclude } from 'class-transformer';
 import { BaseEntity } from 'src/modules/database/base-entity';
 import { User } from 'src/user/entities/user.entity';
 import { userRoles } from 'src/user/user.types';
@@ -12,11 +11,9 @@ export enum RoleApprovalStatus {
 
 @Entity('role-approvals')
 export class RoleApproval extends BaseEntity {
-  @Exclude()
   @Column({ nullable: true })
   userId?: string;
 
-  @Exclude()
   @ManyToOne('User', { nullable: true })
   @JoinColumn({ name: 'userId' })
   user?: User;

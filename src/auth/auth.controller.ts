@@ -4,7 +4,6 @@ import {
   Res,
   Req,
   Post,
-  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -18,6 +17,8 @@ import {
   refreshTokenConfig,
   accessTokenConfig,
 } from 'src/config/cookie.config';
+import { ApiSwaggerResponse } from 'src/modules/swagger/swagger.decorator';
+import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -28,11 +29,13 @@ export class AuthController {
   @ApiBody({
     type: CreateUserDto,
   })
+  @ApiSwaggerResponse(MessageResponse, { status: StatusCodes.CREATED })
   async register(@Res() res: Response, @Body() user: CreateUserDto) {
     try {
       await this.authService.register(user);
-      responseUtils.success(res, {
+      return responseUtils.success(res, {
         data: { message: 'User created successfully' },
+        transformWith: MessageResponse,
         status: StatusCodes.CREATED,
       });
     } catch (error) {
@@ -40,6 +43,7 @@ export class AuthController {
     }
   }
 
+  @ApiSwaggerResponse(MessageResponse)
   @Post('login')
   async login(@Res() res: Response, @Body() user: LoginUserDto) {
     try {
@@ -51,9 +55,9 @@ export class AuthController {
       res.cookie('refreshToken', refreshToken, refreshTokenConfig);
 
       res.cookie('accessToken', accessToken, accessTokenConfig);
-      responseUtils.success(res, {
+      return responseUtils.success(res, {
         data: { message: 'Logged in successfully' },
-        status: StatusCodes.OK,
+        transformWith: MessageResponse,
       });
     } catch (error) {
       console.log(error);
@@ -61,6 +65,7 @@ export class AuthController {
     }
   }
 
+  @ApiSwaggerResponse(MessageResponse)
   @Post('refresh')
   async refresh(@Res() res: Response, @Req() req: Request) {
     const token: unknown = req.cookies['refreshToken'];
@@ -78,22 +83,24 @@ export class AuthController {
       res.cookie('refreshToken', refreshToken, refreshTokenConfig);
       res.cookie('accessToken', accessToken, accessTokenConfig);
 
-      responseUtils.success(res, {
+      return responseUtils.success(res, {
         data: { message: 'AccessToken updated' },
-        status: StatusCodes.OK,
+        transformWith: MessageResponse,
       });
     } catch (error) {
       responseUtils.error({ res, error });
     }
   }
 
+  @ApiSwaggerResponse(MessageResponse, { status: StatusCodes.NO_CONTENT })
   @Post('logout')
   logout(@Res() res: Response) {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
 
-    responseUtils.success(res, {
+    return responseUtils.success(res, {
       data: { message: 'Logged-out successfully!' },
+      transformWith: MessageResponse,
       status: StatusCodes.NO_CONTENT,
     });
   }

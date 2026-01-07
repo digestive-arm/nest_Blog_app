@@ -2,7 +2,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { plainToInstance, type ClassConstructor } from 'class-transformer';
 import { StatusCodes } from 'http-status-codes';
 import type { Response } from 'express';
-interface CommonResponseType<T> {
+export interface CommonResponseType<T> {
   data: T | T[];
   status?: number;
   transformWith?: ClassConstructor<T>;

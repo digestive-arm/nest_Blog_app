@@ -76,8 +76,8 @@ export class AuthService {
   async refresh(receivedRefreshToken: string): Promise<AuthResponse> {
     const tokenPayload = this.authUtils.decodeToken(receivedRefreshToken);
 
-   delete tokenPayload["iat"]
-   delete tokenPayload["exp"]
+    delete tokenPayload['iat'];
+    delete tokenPayload['exp'];
 
     const accessToken = this.authUtils.generateAccessToken(tokenPayload);
     const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);
