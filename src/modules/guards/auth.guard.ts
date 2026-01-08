@@ -5,7 +5,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { RequestWithUser } from 'src/common/request-with-user.interface';
+import { RequestWithUser } from 'src/common/interfaces/request-with-user.interface';
 import { AuthUtils } from 'src/utils/auth.utils';
 
 interface Authcookies {

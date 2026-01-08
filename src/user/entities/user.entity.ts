@@ -2,8 +2,6 @@ import { Entity, Column, OneToMany } from 'typeorm';
 import { userRoles } from '../user-types';
 import { RoleApproval } from 'src/entities/role-approval.entity';
 import { BaseEntity } from 'src/modules/database/base-entity';
-import { Exclude, Expose } from 'class-transformer';
-import { MinLength } from 'class-validator';
 
 @Entity()
 export class User extends BaseEntity {
@@ -25,7 +23,6 @@ export class User extends BaseEntity {
 
   @Column({
     nullable: false,
-    select: false,
     length: 100,
   })
   password: string;
@@ -48,9 +45,4 @@ export class User extends BaseEntity {
 
   @OneToMany(() => RoleApproval, (approval) => approval.user)
   roleRequest: RoleApproval[];
-
-  @Column({
-    nullable: true,
-  })
-  isDeleted: boolean;
 }

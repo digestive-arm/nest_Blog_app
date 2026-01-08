@@ -14,6 +14,7 @@ import {
   AuthResponse,
   TokenPayload,
 } from './auth-types';
+import { ERROR_MESSAGES } from 'src/constants/messages.constants';
 
 @Injectable()
 export class AuthService {
@@ -21,72 +22,91 @@ export class AuthService {
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly authUtils: AuthUtils,
   ) {}
-  //login endpoint
+
   async login(loginUserParams: loginUserParams): Promise<AuthResponse> {
-    const user = await this.userRepository.findOne({
-      where: { email: loginUserParams.email },
-      select: ['email', 'password', 'id', 'role'],
-    });
+    const { email, password } = loginUserParams;
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.role'])
+      .addSelect('user.password')
+      .where('user.email = :email', {
+        email,
+      })
+      .getOne();
 
     if (!user) {
-      throw new NotFoundException('No user exists with provided email');
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
+    const { password: hashed, id, role } = user;
+
     const validPassword = await this.authUtils.validatePassword(
-      loginUserParams.password,
-      user.password,
+      password,
+      hashed,
     );
 
     if (!validPassword) {
-      throw new UnauthorizedException('You entered wrong password');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_PASSWORD);
     }
 
     const tokenPayload: TokenPayload = {
-      email: user.email,
-      id: user.id,
-      role: user.role,
+      email,
+      id,
+      role,
     };
 
     const accessToken = this.authUtils.generateAccessToken(tokenPayload);
     const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);
 
-    user.refreshToken = refreshToken;
-    await this.userRepository.update(
-      { email: user.email },
-      { refreshToken: refreshToken },
-    );
+    await this.userRepository
+      .createQueryBuilder('')
+      .update({ refreshToken })
+      .where('id = :id', {
+        id,
+      })
+      .execute();
 
     return { accessToken, refreshToken };
   }
 
-  async register(
-    createUserParams: createUserParams,
-  ): Promise<createUserParams> {
-    const existingUser = await this.userRepository.find({
-      where: [
-        { email: createUserParams.email },
-        { username: createUserParams.username },
-      ],
-    });
+  async register(createUserParams: createUserParams): Promise<void> {
+    const { email, username, password, firstname, lastname } = createUserParams;
+    const existingUser = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.email', 'user.password'])
+      .where('user.email = :email', {
+        email,
+      })
+      .orWhere('user.username = :username', {
+        username,
+      })
+      .getOne();
 
-    if (existingUser.length > 0) {
-      throw new ConflictException('A user already exists with provided data.');
+    if (existingUser) {
+      throw new ConflictException(ERROR_MESSAGES.ALREADY_EXISTS_ACCOUNT);
     }
 
-    const hashedPassword = await this.authUtils.hashPassword(
-      createUserParams.password,
-    );
+    const hashedPassword = await this.authUtils.hashPassword(password);
 
-    createUserParams.password = hashedPassword;
-
-    const newUser = this.userRepository.create(createUserParams);
-    const user = await this.userRepository.save(newUser);
-
-    return user;
+    await this.userRepository
+      .createQueryBuilder('user')
+      .insert()
+      .into(User)
+      .values([
+        {
+          email,
+          password: hashedPassword,
+          username,
+          firstname,
+          lastname,
+        },
+      ])
+      .execute();
   }
 
   async refresh(receivedRefreshToken: string): Promise<AuthResponse> {
     const tokenPayload = this.authUtils.decodeToken(receivedRefreshToken);
+    const { id } = tokenPayload;
 
     delete tokenPayload['iat'];
     delete tokenPayload['exp'];
@@ -94,12 +114,13 @@ export class AuthService {
     const accessToken = this.authUtils.generateAccessToken(tokenPayload);
     const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);
 
-    await this.userRepository.update(
-      { email: tokenPayload.email },
-      {
-        refreshToken,
-      },
-    );
+    await this.userRepository
+      .createQueryBuilder()
+      .update({ refreshToken })
+      .where('id = :id', {
+        id,
+      })
+      .execute();
 
     return { accessToken, refreshToken };
   }

@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
   Body,
   Patch,
   Param,
@@ -11,14 +10,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UpdateUserDto } from './dto/update-user.dto';
-import responseUtils from 'src/utils/response.utils';
-import type { Response } from 'express';
+import { UpdateUserDto } from './dto/user.dto';
 import { ApiSwaggerResponse } from 'src/modules/swagger/swagger.decorator';
 import { FindAllUsersResponse, UserResponse } from './user.response';
 import { AuthGuard } from 'src/modules/guards/auth.guard';
 import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
-import { updateUserParams } from '../../dist/user/user.types';
+import { SUCCESS_MESSAGES } from 'src/constants/messages.constants';
+import responseUtils from 'src/utils/response.utils';
+import type { Response } from 'express';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller('user')
 @UseGuards(AuthGuard)
@@ -29,11 +29,14 @@ export class UserController {
   @Get()
   async findAll(
     @Res() res: Response,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '1',
+    @Query() { page = '1', limit = '1', isPagination }: PaginationDto,
   ) {
     try {
-      const result = await this.userService.findAll(+page, +limit);
+      const result = await this.userService.findAll(
+        +page,
+        +limit,
+        isPagination,
+      );
       return responseUtils.success(res, {
         data: result,
       });
@@ -67,7 +70,7 @@ export class UserController {
       this.userService.update(id, updateUserParams);
       responseUtils.success(res, {
         data: {
-          message: 'User updated successfully!',
+          message: SUCCESS_MESSAGES.UPDATED,
         },
         transformWith: MessageResponse,
       });
@@ -83,7 +86,7 @@ export class UserController {
       this.userService.remove(id);
       return responseUtils.success(res, {
         data: {
-          message: 'User deleted successfully!',
+          message: SUCCESS_MESSAGES.DELETED,
         },
         transformWith: MessageResponse,
       });

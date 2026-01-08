@@ -1,6 +1,7 @@
 import { Expose } from 'class-transformer';
 import { userRoles } from './user-types';
 import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
+import { PaginationMetaResponse } from 'src/common/responses/pagination.response';
 
 export class UserResponse {
   @Expose()
@@ -28,29 +29,12 @@ export class UserResponse {
   role: userRoles;
 }
 
-export class PaginationMetaDto {
-  @ApiPropertyWritable({ example: 100 })
-  totalItems: number;
-
-  @ApiPropertyWritable({ example: 10 })
-  itemsCount: number;
-
-  @ApiPropertyWritable({ example: 10 })
-  itemsPerPage: number;
-
-  @ApiPropertyWritable({ example: 10 })
-  totalPages: number;
-
-  @ApiPropertyWritable({ example: 1 })
-  currentPage: number;
-}
-
 export class FindAllUsersResponse {
   @Expose()
   @ApiPropertyWritable({ type: [UserResponse] })
   data: UserResponse[];
 
   @Expose()
-  @ApiPropertyWritable({ type: PaginationMetaDto })
-  meta: PaginationMetaDto;
+  @ApiPropertyWritable({ type: PaginationMetaResponse })
+  meta: PaginationMetaResponse;
 }

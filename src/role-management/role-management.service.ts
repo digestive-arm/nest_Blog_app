@@ -11,6 +11,7 @@ import {
 import { Repository } from 'typeorm';
 import { userRoles } from 'src/user/user-types';
 import { User } from 'src/user/entities/user.entity';
+import { ERROR_MESSAGES } from 'src/constants/messages.constants';
 
 @Injectable()
 export class RoleManagementService {
@@ -21,50 +22,60 @@ export class RoleManagementService {
   ) {}
 
   //request upgrade
-  async requestUpdgrade(
-    requestedRole: userRoles,
-    userId: string,
-  ): Promise<void> {
-    const user = await this.userRepository.findOneBy({ id: userId });
+  async requestUpdgrade(requestedRole: userRoles, id: string): Promise<void> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id'])
+      .where('user.id = :id', {
+        id,
+      })
+      .getOne();
 
     if (!user) {
-      throw new NotFoundException('No user exists with provided userid');
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
-    const requestExists = await this.roleApprovalRepository.findOne({
-      where: {
-        userId: user.id,
+    const requestExists = await this.roleApprovalRepository
+      .createQueryBuilder('role')
+      .where('role.userId = :id AND role.requestedRole = :requestedRole', {
+        id,
         requestedRole,
-      },
-    });
+      })
+      .getOne();
 
     if (requestExists) {
-      throw new ConflictException('A role approval request already exists!');
+      throw new ConflictException(ERROR_MESSAGES.CONFLICT);
     }
-    const roleUpdationRequest = new RoleApproval();
-    roleUpdationRequest.requestedRole = requestedRole;
-    roleUpdationRequest.status = RoleApprovalStatus.PENDING;
-    roleUpdationRequest.userId = user.id;
 
-    await this.roleApprovalRepository.save(roleUpdationRequest);
+    await this.roleApprovalRepository
+      .createQueryBuilder('role')
+      .insert()
+      .into(RoleApproval)
+      .values([{ requestedRole, userId: id }])
+      .execute();
   }
 
   //get my requests
-  async getMyRequests(userId: string): Promise<RoleApproval[]> {
-    const user = await this.userRepository.findOneBy({
-      id: userId,
-    });
+  async getMyRequests(id: string): Promise<RoleApproval[]> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id'])
+      .where('user.id = :id', { id })
+      .getOne();
 
     if (!user) {
-      throw new NotFoundException('No user exists with provided userId');
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
-    const result = await this.roleApprovalRepository.findBy({
-      userId,
-    });
+    const result = await this.roleApprovalRepository
+      .createQueryBuilder('role')
+      .where('role.userId = :id', {
+        id,
+      })
+      .getMany();
 
     if (result.length === 0) {
-      throw new NotFoundException('No requests found for given userId');
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
     return result;
@@ -72,11 +83,12 @@ export class RoleManagementService {
 
   //get pending reqests
   async getPendingRequest(): Promise<RoleApproval[]> {
-    const result = await this.roleApprovalRepository.find({
-      where: {
+    const result = await this.roleApprovalRepository
+      .createQueryBuilder('role')
+      .where('role.status = :status', {
         status: RoleApprovalStatus.PENDING,
-      },
-    });
+      })
+      .getMany();
 
     return result;
   }
@@ -86,37 +98,38 @@ export class RoleManagementService {
     isApproved: boolean,
     roleApprovalRequestId: string,
   ): Promise<void> {
-    const requestExists = await this.roleApprovalRepository.findOneBy({
-      id: roleApprovalRequestId,
-    });
+    const requestExists = await this.roleApprovalRepository
+      .createQueryBuilder('role')
+      .where('role.id = :roleApprovalRequestId', {
+        roleApprovalRequestId,
+      })
+      .getOne();
 
     if (!requestExists) {
-      throw new NotFoundException(
-        'No role approval request exists with given request id',
-      );
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
     const updateStatus = isApproved
       ? RoleApprovalStatus.APPROVED
       : RoleApprovalStatus.REJECTED;
 
-    await this.roleApprovalRepository.update(
-      {
-        id: roleApprovalRequestId,
-      },
-      {
-        status: updateStatus,
-      },
-    );
+    await this.roleApprovalRepository
+      .createQueryBuilder('role')
+      .update({ status: updateStatus })
+      .where('id = :roleApprovalRequestId', {
+        roleApprovalRequestId,
+      })
+      .execute();
+
+    const { userId, requestedRole: role } = requestExists;
 
     if (isApproved) {
-      await this.userRepository.update(
-        {
-          id: requestExists.userId,
-        },
-        {
-          role: requestExists.requestedRole,
-        },
-      );
+      await this.userRepository
+        .createQueryBuilder('user')
+        .update({
+          role,
+        })
+        .where('user.id = :userId', { userId })
+        .execute();
     }
   }
 }

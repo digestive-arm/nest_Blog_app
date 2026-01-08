@@ -11,8 +11,8 @@ import {
 } from '@nestjs/common';
 import { RoleManagementService } from './role-management.service';
 import type { Response } from 'express';
-import { UpdateRoleDto } from './dto/upgrade-role.dto';
-import { processRoleApprovalRequestDto } from './dto/process-role.dto';
+import { UpdateRoleDto } from './dto/role-management.dto';
+import { processRoleApprovalRequestDto } from './dto/role-management.dto';
 import responseUtils from 'src/utils/response.utils';
 import { StatusCodes } from 'http-status-codes';
 import { AuthGuard } from 'src/modules/guards/auth.guard';
@@ -22,6 +22,10 @@ import {
   PendingRequestsResponse,
 } from './role-management.response';
 import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
+import {
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+} from 'src/constants/messages.constants';
 
 @Controller('role')
 @UseGuards(AuthGuard)
@@ -40,7 +44,7 @@ export class RoleManagementController {
         transformWith: MyRequestsResponse,
       });
     } catch (error: AnyType) {
-      responseUtils.error({ res, error });
+      return responseUtils.error({ res, error });
     }
   }
 
@@ -53,7 +57,7 @@ export class RoleManagementController {
     @Param('id') userId: string,
   ) {
     if (!updateRoleDto.role) {
-      throw new BadRequestException('Role is not specified!');
+      throw new BadRequestException(ERROR_MESSAGES.BAD_REQUEST);
     }
 
     try {
@@ -63,12 +67,12 @@ export class RoleManagementController {
       );
 
       return responseUtils.success(res, {
-        data: { message: 'Role updation request has been created!' },
+        data: { message: SUCCESS_MESSAGES.CREATED },
         status: StatusCodes.CREATED,
         transformWith: MessageResponse,
       });
     } catch (error) {
-      responseUtils.error({ res, error });
+      return responseUtils.error({ res, error });
     }
   }
   //get pending reqests
@@ -82,7 +86,7 @@ export class RoleManagementController {
         transformWith: PendingRequestsResponse,
       });
     } catch (error) {
-      responseUtils.error({ res, error });
+      return responseUtils.error({ res, error });
     }
   }
   //approve / reject request
@@ -90,21 +94,21 @@ export class RoleManagementController {
   @Patch('/:id/process-request')
   async processRequest(
     @Res() res: Response,
-    @Body() processRoleApprovalRequestDto: processRoleApprovalRequestDto,
+    @Body() { isApproved }: processRoleApprovalRequestDto,
     @Param('id') roleApprovalRequestId: string,
   ) {
     try {
       await this.roleManagementService.processRequest(
-        processRoleApprovalRequestDto.isApproved,
+        isApproved,
         roleApprovalRequestId,
       );
 
       return responseUtils.success(res, {
-        data: { message: 'Request has been processed!' },
+        data: { message: SUCCESS_MESSAGES.SUCCESS },
         transformWith: MessageResponse,
       });
     } catch (error) {
-      responseUtils.error({ res, error });
+      return responseUtils.error({ res, error });
     }
   }
 }
