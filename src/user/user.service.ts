@@ -57,7 +57,6 @@ export class UserService {
   async update(id: string, updateUserParams: updateUserParams): Promise<void> {
     const result = await this.userRepository.preload({
       id: id,
-      updatedAt: Date.now(),
       ...updateUserParams,
     });
 
