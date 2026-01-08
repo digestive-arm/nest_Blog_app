@@ -15,6 +15,15 @@ export class MyRequestsResponse {
   @Expose()
   @ApiPropertyWritable()
   requestedRole: userRoles;
+
+  @Exclude()
+  createdAt: Date;
+
+  @Exclude()
+  updatedAt: Date;
+
+  @Exclude()
+  deletedAt: Date;
 }
 
 export class PendingRequestsResponse {
@@ -31,7 +40,7 @@ export class PendingRequestsResponse {
   requestedRole: userRoles;
 
   @Exclude()
-    @ApiPropertyWritable()
+  @ApiPropertyWritable()
   status: RoleApprovalStatus;
 
   @Exclude()

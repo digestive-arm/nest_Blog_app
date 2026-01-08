@@ -9,12 +9,8 @@ import {
 } from 'src/common/helper/pagination.helper';
 import { ERROR_MESSAGES } from 'src/constants/messages.constants';
 import { paginationMeta } from 'src/common/interfaces/pagination.interfaces';
-import {
-  buildDeleteUserByIdQuery,
-  buildFindAllUsersQuery,
-  buildFindUserByIdQuery,
-  buildUpdateUserByIdQuery,
-} from 'src/common/queries/user.queries';
+import { USER_SELECT_FIELDS } from 'src/common/queries';
+import { SORTBY } from 'src/common/enums';
 
 @Injectable()
 export class UserService {
@@ -27,7 +23,10 @@ export class UserService {
     limit: number,
     isPagination: boolean,
   ): Promise<paginationMeta> {
-    const queryBuilder = buildFindAllUsersQuery(this.userRepository);
+    const queryBuilder = this.userRepository
+      .createQueryBuilder('user')
+      .select(USER_SELECT_FIELDS)
+      .orderBy(`user.${SORTBY.CREATED_AT}`, SORTBY.DESC);
 
     if (isPagination) {
       const offset = getOffset(page, limit);
@@ -40,7 +39,13 @@ export class UserService {
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await buildFindUserByIdQuery(this.userRepository, id).getOne();
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .select(USER_SELECT_FIELDS)
+      .where('user.id = :id', {
+        id,
+      })
+      .getOne();
 
     if (!user) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
@@ -50,11 +55,14 @@ export class UserService {
   }
 
   async update(id: string, updateUserParams: updateUserParams): Promise<void> {
-    const result = await buildUpdateUserByIdQuery(
-      this.userRepository,
-      id,
-      updateUserParams,
-    ).execute();
+    const result = await await this.userRepository
+      .createQueryBuilder('user')
+      .update({
+        ...updateUserParams,
+        updatedAt: () => 'CURRENT_TIMESTAMP',
+      })
+      .where('id = :id', { id })
+      .execute();
 
     if (result.affected === 0) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
@@ -62,6 +70,11 @@ export class UserService {
   }
 
   async remove(id: string): Promise<void> {
-    await buildDeleteUserByIdQuery(this.userRepository, id).execute();
+    await this.userRepository
+      .createQueryBuilder('user')
+      .update(User)
+      .set({ deletedAt: () => 'CURRENT_TIMESTAMP' })
+      .where('id = :id', { id })
+      .execute();
   }
 }
