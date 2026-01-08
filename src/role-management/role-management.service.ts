@@ -56,7 +56,7 @@ export class RoleManagementService {
   }
 
   //get my requests
-  async getMyRequests(id: string): Promise<RoleApproval[]> {
+  async getMyRequests(id: string): Promise<Partial<RoleApproval[]>> {
     const user = await this.userRepository
       .createQueryBuilder('user')
       .select(['user.id'])
