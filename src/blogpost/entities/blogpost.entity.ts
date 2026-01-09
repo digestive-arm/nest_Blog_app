@@ -1,5 +1,5 @@
-import { BaseEntity } from 'src/modules/database/base-entity';
-import { User } from 'src/user/entities/user.entity';
+import { BaseEntity } from '../../modules/database/base-entity';
+import { User } from '../../user/entities/user.entity';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { BLOG_POST_STATUS } from '../blogpost-types';
 

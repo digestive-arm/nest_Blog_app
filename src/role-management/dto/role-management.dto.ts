@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsBoolean, IsNotEmpty } from 'class-validator';
-import { TrimString } from 'src/modules/decorators/trim-string.decorator';
-import { userRoles } from 'src/user/user-types';
+import { TrimString } from '../../modules/decorators/trim-string.decorator';
+import { userRoles } from '../../user/user-types';
 
 export class UpdateRoleDto {
   @ApiProperty({

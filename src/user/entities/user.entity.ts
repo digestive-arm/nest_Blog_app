@@ -1,8 +1,8 @@
 import { Entity, Column, OneToMany } from 'typeorm';
 import { userRoles } from '../user-types';
-import { RoleApproval } from 'src/role-management/entities/role-management.entity';
-import { BaseEntity } from 'src/modules/database/base-entity';
-import { BlogpostEntity } from 'src/blogpost/entities/blogpost.entity';
+import { RoleApproval } from '../../role-management/entities/role-management.entity';
+import { BaseEntity } from '../../modules/database/base-entity';
+import { BlogpostEntity } from '../../blogpost/entities/blogpost.entity';
 
 @Entity()
 export class User extends BaseEntity {
