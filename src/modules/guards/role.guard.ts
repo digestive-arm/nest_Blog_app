@@ -36,9 +36,14 @@ export class AccessRoleGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
+    if (user.role === userRoles.ADMIN) {
+      //Admin has access to all routes
+      return true;
+    }
+
     if (!this.allowedRoles.includes(user.role)) {
       throw new ForbiddenException(
-        `Required roles: ${this.allowedRoles.join(', ')}`,
+        `Your role doesn't have access to this resource.`,
       );
     }
 

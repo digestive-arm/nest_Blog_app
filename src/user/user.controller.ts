@@ -20,6 +20,7 @@ import responseUtils from 'src/utils/response.utils';
 import type { Response } from 'express';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { USER_ROUTES } from 'src/constants/routes';
+import { RolesGuard } from 'src/modules/guards/role.guard';
 
 @Controller(USER_ROUTES.USER)
 @UseGuards(AuthGuard)
@@ -28,6 +29,7 @@ export class UserController {
 
   @ApiSwaggerResponse(FindAllUsersResponse)
   @Get()
+  @UseGuards(RolesGuard())
   async findAll(
     @Res() res: Response,
     @Query() { page = '1', limit = '1', isPagination }: PaginationDto,

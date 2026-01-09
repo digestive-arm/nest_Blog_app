@@ -27,6 +27,7 @@ import {
   SUCCESS_MESSAGES,
 } from 'src/constants/messages.constants';
 import { ROLE_MANAGEMENT_ROUTES } from 'src/constants/routes';
+import { RolesGuard } from 'src/modules/guards/role.guard';
 
 @Controller(ROLE_MANAGEMENT_ROUTES.ROLE)
 @UseGuards(AuthGuard)
@@ -79,6 +80,7 @@ export class RoleManagementController {
   //get pending reqests
   @ApiSwaggerResponse(PendingRequestsResponse, {})
   @Get(ROLE_MANAGEMENT_ROUTES.PENDING_REQUESTS)
+  @UseGuards(RolesGuard())
   async getPendingRequest(@Res() res: Response) {
     try {
       const result = await this.roleManagementService.getPendingRequest();
@@ -93,6 +95,7 @@ export class RoleManagementController {
   //approve / reject request
   @ApiSwaggerResponse(MessageResponse)
   @Patch(ROLE_MANAGEMENT_ROUTES.PROCESS_REQUEST)
+  @UseGuards(RolesGuard())
   async processRequest(
     @Res() res: Response,
     @Body() { isApproved }: processRoleApprovalRequestDto,
