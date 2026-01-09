@@ -2,6 +2,7 @@ import { Entity, Column, OneToMany } from 'typeorm';
 import { userRoles } from '../user-types';
 import { RoleApproval } from 'src/role-management/entities/role-management.entity';
 import { BaseEntity } from 'src/modules/database/base-entity';
+import { BlogpostEntity } from 'src/blogpost/entities/blogpost.entity';
 
 @Entity()
 export class User extends BaseEntity {
@@ -45,4 +46,7 @@ export class User extends BaseEntity {
 
   @OneToMany(() => RoleApproval, (approval) => approval.user)
   roleRequest: RoleApproval[];
+
+  @OneToMany(() => BlogpostEntity, (post) => post.authorId)
+  blogPosts: BlogpostEntity[];
 }
