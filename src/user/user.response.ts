@@ -55,6 +55,7 @@ export class UserResponse {
 export class FindAllUsersResponse {
   @Expose()
   @ApiPropertyWritable({ type: [UserResponse] })
+  @Type(() => UserResponse)
   data: UserResponse[];
 
   @Expose()

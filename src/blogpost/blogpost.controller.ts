@@ -63,7 +63,7 @@ export class BlogpostController {
       );
       return responseUtils.success(res, {
         data: result,
-        // transformWith: GetAllBlogPostResponse,
+        transformWith: GetAllBlogPostResponse,
       });
     } catch (error) {
       return responseUtils.error({ res, error });

@@ -87,16 +87,17 @@ export class BlogpostService {
   }
 
   async remove(id: string) {
-    const blogPost = await this.blogPostRepository.preload({
-      id,
-      deletedAt: new Date(),
+    const blogPost = await this.blogPostRepository.findOne({
+      where: {
+        id,
+      },
     });
 
     if (!blogPost) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
-    await this.blogPostRepository.save(blogPost);
+    await this.blogPostRepository.softRemove(blogPost);
   }
 
   async publish(id: string) {

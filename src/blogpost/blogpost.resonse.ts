@@ -2,6 +2,7 @@ import { Expose, Type } from 'class-transformer';
 import { PaginationMetaResponse } from 'src/common/responses/pagination.response';
 import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
 import { BLOG_POST_STATUS } from './blogpost-types';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class BlogPostResponse {
   @Expose()
@@ -23,7 +24,7 @@ export class BlogPostResponse {
   content: string;
 
   @Expose()
-  @ApiPropertyWritable({
+  @ApiPropertyOptional({
     example: 'Summary of your blogpost',
   })
   summary?: string;
@@ -51,6 +52,7 @@ export class BlogPostResponse {
 export class GetAllBlogPostResponse {
   @Expose()
   @ApiPropertyWritable({ type: [BlogPostResponse] })
+  @Type(() => BlogPostResponse)
   data: BlogPostResponse[];
 
   @Expose()

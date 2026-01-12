@@ -42,6 +42,7 @@ export class UserController {
       );
       return responseUtils.success(res, {
         data: result,
+        transformWith: FindAllUsersResponse,
       });
     } catch (error) {
       return responseUtils.error({ res, error });
