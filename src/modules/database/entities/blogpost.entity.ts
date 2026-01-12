@@ -15,11 +15,6 @@ export class BlogpostEntity extends BaseEntity {
   })
   content: string;
 
-
-  @Column({
-    nullable: false,
-  })
-  newColumn : string;
   @Column({
     nullable: false,
     unique: true,
