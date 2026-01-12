@@ -24,7 +24,7 @@ export class BlogPostResponse {
   content: string;
 
   @Expose()
-  @ApiPropertyOptional({
+  @ApiPropertyWritable({
     example: 'Summary of your blogpost',
   })
   summary?: string;

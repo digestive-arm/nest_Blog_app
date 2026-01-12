@@ -1,4 +1,4 @@
-import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import {
   IsNotEmpty,
   IsOptional,
@@ -101,7 +101,7 @@ export class UpdateBlogPostDto {
   content: string;
 
   //summary
-  @ApiProperty({
+  @ApiPropertyOptional({
     example:
       'A beginner-friendly overview of why NestJS is useful, how its structure helps scalability, and how developers can gradually adopt its core concepts to build production-ready backend applications.',
     description: 'Content of your blogpost',
