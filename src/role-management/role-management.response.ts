@@ -1,5 +1,5 @@
 import { Exclude, Expose } from 'class-transformer';
-import { RoleApprovalStatus } from 'src/role-management/entities/role-management.entity';
+import { RoleApprovalStatus } from 'src/modules/database/entities/role-management.entity';
 import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
 import { userRoles } from 'src/user/user-types';
 

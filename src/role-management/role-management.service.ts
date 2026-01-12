@@ -7,10 +7,10 @@ import {
 import {
   RoleApproval,
   RoleApprovalStatus,
-} from 'src/role-management/entities/role-management.entity';
+} from 'src/modules/database/entities/role-management.entity';
 import { Repository } from 'typeorm';
 import { userRoles } from 'src/user/user-types';
-import { User } from 'src/user/entities/user.entity';
+import { User } from 'src/modules/database/entities/user.entity';
 import { ERROR_MESSAGES } from 'src/constants/messages.constants';
 import { ID_SELECT_FIELDS } from 'src/user/user.constants';
 

@@ -2,7 +2,8 @@ import { Exclude, Expose, Type } from 'class-transformer';
 import { userRoles } from './user-types';
 import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
 import { PaginationMetaResponse } from 'src/common/responses/pagination.response';
-import { RoleApproval } from 'src/role-management/entities/role-management.entity';
+import { RoleApproval } from 'src/modules/database/entities/role-management.entity';
+import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
 
 export class UserResponse {
   @Expose()
@@ -40,6 +41,9 @@ export class UserResponse {
 
   @Exclude()
   roleRequest: RoleApproval[];
+
+  @Exclude()
+  blogPosts: BlogpostEntity[];
 
   @Exclude()
   createdAt: Date;
