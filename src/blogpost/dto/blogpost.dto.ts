@@ -26,9 +26,6 @@ export class CreateBlogPostDto {
   @MaxLength(150, {
     message: 'Title length should be less than $constraint1 characters.',
   })
-  @IsString({
-    message: 'Title must be a string',
-  })
   title: string;
 
   //content
@@ -45,7 +42,6 @@ export class CreateBlogPostDto {
   })
   @TrimString()
   @MaxLength(50_000)
-  @IsString()
   content: string;
 
   //summary
@@ -55,9 +51,6 @@ export class CreateBlogPostDto {
     description: 'Content of your blogpost',
   })
   @IsOptional()
-  @IsString({
-    message: 'Summary must be string',
-  })
   @TrimString()
   summary?: string;
 
