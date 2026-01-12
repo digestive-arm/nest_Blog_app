@@ -53,12 +53,12 @@ export class BlogpostController {
   })
   async findAll(
     @Res() res: Response,
-    @Query() { page = '1', limit = '1', isPagination }: PaginationDto,
+    @Query() { page, limit, isPagination }: PaginationDto,
   ) {
     try {
       const result = await this.blogpostService.findAll(
-        +page,
-        +limit,
+        page,
+        limit,
         isPagination,
       );
       return responseUtils.success(res, {
