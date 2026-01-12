@@ -1,4 +1,4 @@
-import { OmitType, PartialType } from '@nestjs/swagger';
+import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import {
   IsNotEmpty,
   IsOptional,
@@ -11,6 +11,11 @@ import { TrimString } from 'src/modules/decorators/trim-string.decorator';
 
 export class CreateBlogPostDto {
   //title
+
+  @ApiProperty({
+    example: 'New Blog Post',
+    description: 'Title of your blogpost',
+  })
   @IsNotEmpty({
     message: 'Title cannot be empty.',
   })
@@ -27,6 +32,11 @@ export class CreateBlogPostDto {
   title: string;
 
   //content
+  @ApiProperty({
+    example:
+      'Learning NestJS can feel overwhelming at first, especially if you are coming from a simple Express background. However, NestJS provides a powerful structure that helps you build scalable and maintainable backend applications. Its modular architecture encourages separation of concerns, making your codebase easier to understand and extend. Features like dependency injection, guards, interceptors, and pipes may seem complex initially, but they solve real problems in larger systems. By starting with small modules and gradually adopting NestJS best practices, you can improve both code quality and developer productivity while building robust APIs that are ready for production use.',
+    description: 'Content of your blogpost',
+  })
   @IsNotEmpty({
     message: 'Content cannot be empty.',
   })
@@ -39,6 +49,11 @@ export class CreateBlogPostDto {
   content: string;
 
   //summary
+  @ApiProperty({
+    example:
+      'A beginner-friendly overview of why NestJS is useful, how its structure helps scalability, and how developers can gradually adopt its core concepts to build production-ready backend applications.',
+    description: 'Content of your blogpost',
+  })
   @IsOptional()
   @IsString({
     message: 'Summary must be string',
@@ -47,6 +62,10 @@ export class CreateBlogPostDto {
   summary?: string;
 
   //authorId
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'AuthorId',
+  })
   @IsNotEmpty({
     message: 'AuthorId cannot be empty',
   })
@@ -56,5 +75,5 @@ export class CreateBlogPostDto {
 }
 
 export class UpdateBlogPostDto extends PartialType(
-  OmitType(CreateBlogPostDto, ['authorId'] as const),
+  OmitType(CreateBlogPostDto, ['authorId']),
 ) {}
