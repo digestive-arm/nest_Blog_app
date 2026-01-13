@@ -28,7 +28,9 @@ import { OwnershipGuard } from 'src/modules/guards/ownership.guard';
 import { SearchService } from './search.service';
 import { SearchBlogPostDto } from './dto/search.dto';
 import { SearchResponse } from './search.response';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags(BLOG_POST_ROUTES.BLOG_POST)
 @Controller(BLOG_POST_ROUTES.BLOG_POST)
 export class BlogpostController {
   constructor(

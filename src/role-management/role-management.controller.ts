@@ -28,7 +28,9 @@ import {
 } from 'src/constants/messages.constants';
 import { ROLE_MANAGEMENT_ROUTES } from 'src/constants/routes';
 import { RolesGuard } from 'src/modules/guards/role.guard';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags(ROLE_MANAGEMENT_ROUTES.ROLE)
 @Controller(ROLE_MANAGEMENT_ROUTES.ROLE)
 @UseGuards(AuthGuard)
 export class RoleManagementController {

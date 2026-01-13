@@ -21,7 +21,9 @@ import type { Response } from 'express';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { USER_ROUTES } from 'src/constants/routes';
 import { RolesGuard } from 'src/modules/guards/role.guard';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags(USER_ROUTES.USER)
 @Controller(USER_ROUTES.USER)
 @UseGuards(AuthGuard)
 export class UserController {

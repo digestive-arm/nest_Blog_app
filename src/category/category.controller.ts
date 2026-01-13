@@ -20,7 +20,9 @@ import { SUCCESS_MESSAGES } from 'src/constants/messages.constants';
 import { StatusCodes } from 'http-status-codes';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { CategoryResponse, GetAllCategoryResponse } from './category.response';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags(CATEGORY_ROUTES.CATEGORY)
 @Controller(CATEGORY_ROUTES.CATEGORY)
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
