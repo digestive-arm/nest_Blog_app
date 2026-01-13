@@ -1,4 +1,4 @@
-import { userRoles } from 'src/user/user-types';
+import { USER_ROLES } from 'src/user/user-types';
 
 export interface createUserParams {
   email: string;
@@ -21,5 +21,5 @@ export interface AuthResponse {
 export interface TokenPayload {
   id: string;
   email: string;
-  role: userRoles;
+  role: USER_ROLES;
 }

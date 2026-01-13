@@ -1,7 +1,7 @@
 import { Exclude, Expose } from 'class-transformer';
 import { RoleApprovalStatus } from 'src/modules/database/entities/role-management.entity';
 import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
-import { userRoles } from 'src/user/user-types';
+import { USER_ROLES } from 'src/user/user-types';
 
 export class MyRequestsResponse {
   @Expose()
@@ -18,7 +18,7 @@ export class MyRequestsResponse {
 
   @Expose()
   @ApiPropertyWritable()
-  requestedRole: userRoles;
+  requestedRole: USER_ROLES;
 
   @Exclude()
   createdAt: Date;
@@ -41,7 +41,7 @@ export class PendingRequestsResponse {
 
   @Expose()
   @ApiPropertyWritable()
-  requestedRole: userRoles;
+  requestedRole: USER_ROLES;
 
   @Exclude()
   @ApiPropertyWritable()

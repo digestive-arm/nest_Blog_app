@@ -9,7 +9,7 @@ import {
   RoleApprovalStatus,
 } from 'src/modules/database/entities/role-management.entity';
 import { Repository } from 'typeorm';
-import { userRoles } from 'src/user/user-types';
+import { USER_ROLES } from 'src/user/user-types';
 import { User } from 'src/modules/database/entities/user.entity';
 import { ERROR_MESSAGES } from 'src/constants/messages.constants';
 import { ID_SELECT_FIELDS } from 'src/user/user.constants';
@@ -23,7 +23,7 @@ export class RoleManagementService {
   ) {}
 
   //request upgrade
-  async requestUpdgrade(requestedRole: userRoles, id: string): Promise<void> {
+  async requestUpdgrade(requestedRole: USER_ROLES, id: string): Promise<void> {
     const user = await this.userRepository
       .createQueryBuilder('user')
       .select(ID_SELECT_FIELDS)

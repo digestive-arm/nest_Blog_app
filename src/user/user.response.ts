@@ -1,5 +1,5 @@
 import { Exclude, Expose, Type } from 'class-transformer';
-import { userRoles } from './user-types';
+import { USER_ROLES } from './user-types';
 import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
 import { PaginationMetaResponse } from 'src/common/responses/pagination.response';
 import { RoleApproval } from 'src/modules/database/entities/role-management.entity';
@@ -27,8 +27,8 @@ export class UserResponse {
   email: string;
 
   @Expose()
-  @ApiPropertyWritable({ enum: userRoles, example: userRoles.READER })
-  role: userRoles;
+  @ApiPropertyWritable({ enum: USER_ROLES, example: USER_ROLES.READER })
+  role: USER_ROLES;
 
   @Exclude()
   password: string;

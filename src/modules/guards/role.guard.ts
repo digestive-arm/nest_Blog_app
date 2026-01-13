@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { userRoles } from 'src/user/user-types';
+import { USER_ROLES } from 'src/user/user-types';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/modules/database/entities/user.entity';
 import { RequestWithUser } from 'src/common/interfaces/request-with-user.interface';
@@ -16,7 +16,7 @@ import { RequestWithUser } from 'src/common/interfaces/request-with-user.interfa
 export class AccessRoleGuard implements CanActivate {
   constructor(
     protected readonly userRepository: Repository<User>,
-    protected readonly allowedRoles: userRoles[],
+    protected readonly allowedRoles: USER_ROLES[],
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -36,7 +36,7 @@ export class AccessRoleGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    if (user.role === userRoles.ADMIN) {
+    if (user.role === USER_ROLES.ADMIN) {
       //Admin has access to all routes
       return true;
     }
@@ -51,7 +51,7 @@ export class AccessRoleGuard implements CanActivate {
   }
 }
 
-export const RolesGuard = (...roles: userRoles[]): Type<any> => {
+export const RolesGuard = (...roles: USER_ROLES[]): Type<any> => {
   @Injectable()
   class RolesGuardWithArgs extends AccessRoleGuard {
     constructor(
