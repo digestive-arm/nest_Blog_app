@@ -15,3 +15,8 @@ export interface paginationParams {
   limit: number;
   total: number;
 }
+export interface paginationInput {
+  page: number;
+  limit: number;
+  isPagination: boolean;
+}

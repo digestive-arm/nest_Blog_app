@@ -33,3 +33,12 @@ export const BLOG_POST_ROUTES = {
 export const SEARCH_ROUTES = {
   SEARCH: 'search',
 };
+
+export const CATEGORY_ROUTES = {
+  CATEGORY: 'category',
+  CREATE: '',
+  GET_ALL: '',
+  GET_ONE: ':id',
+  UPDATE: ':id',
+  DELETE: ':id',
+};
