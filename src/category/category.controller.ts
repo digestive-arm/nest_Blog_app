@@ -103,6 +103,7 @@ export class CategoryController {
   }
 
   @Delete(CATEGORY_ROUTES.DELETE)
+  @ApiSwaggerResponse(MessageResponse)
   async remove(@Res() res: Response, @Param('id') id: string) {
     try {
       await this.categoryService.remove(id);
