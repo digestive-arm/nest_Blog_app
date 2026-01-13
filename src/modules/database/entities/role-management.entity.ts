@@ -14,7 +14,7 @@ export class RoleApproval extends BaseEntity {
   @Column()
   userId: string;
 
-  @ManyToOne('User', { nullable: true })
+  @ManyToOne('UserEntity', { nullable: true })
   @JoinColumn({ name: 'userId' })
   user?: UserEntity;
 

@@ -30,7 +30,7 @@ export class BlogpostEntity extends BaseEntity {
   })
   authorId: string;
 
-  @ManyToOne('User', {
+  @ManyToOne('UserEntity', {
     nullable: true,
   })
   @JoinColumn({

@@ -27,7 +27,7 @@ export class BaseEntity {
   createdBy?: string;
 
   @Exclude()
-  @ManyToOne('User', { nullable: true })
+  @ManyToOne('UserEntity', { nullable: true })
   @JoinColumn({ name: 'createdBy' })
   creator?: UserEntity;
 
@@ -36,7 +36,7 @@ export class BaseEntity {
   updatedBy?: string;
 
   @Exclude()
-  @ManyToOne('User', { nullable: true })
+  @ManyToOne('UserEntity', { nullable: true })
   @JoinColumn({ name: 'updatedBy' })
   updater?: UserEntity;
 
