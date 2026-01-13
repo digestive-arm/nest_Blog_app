@@ -8,6 +8,7 @@ import {
   Delete,
   Res,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { BlogpostService } from './blogpost.service';
 import { CreateBlogPostDto, UpdateBlogPostDto } from './dto/blogpost.dto';
@@ -20,11 +21,16 @@ import { GetAllBlogPostResponse } from './blogpost.resonse';
 import { BLOG_POST_ROUTES } from 'src/constants/routes';
 import responseUtils from 'src/utils/response.utils';
 import type { Response } from 'express';
+import { AuthGuard } from 'src/modules/guards/auth.guard';
+import { RolesGuard } from 'src/modules/guards/role.guard';
+import { USER_ROLES } from 'src/user/user-types';
+import { OwnershipGuard } from 'src/modules/guards/ownership.guard';
 
 @Controller(BLOG_POST_ROUTES.BLOG_POST)
 export class BlogpostController {
   constructor(private readonly blogpostService: BlogpostService) {}
 
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
   @Post(BLOG_POST_ROUTES.CREATE)
   @ApiSwaggerResponse(MessageResponse, {
     status: StatusCodes.CREATED,
@@ -106,6 +112,7 @@ export class BlogpostController {
     }
   }
 
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR), OwnershipGuard)
   @ApiSwaggerResponse(MessageResponse)
   @Patch(BLOG_POST_ROUTES.PUBLISH)
   publish(@Res() res: Response, @Param('id') id: string) {
