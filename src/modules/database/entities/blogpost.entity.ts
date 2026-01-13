@@ -2,6 +2,7 @@ import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../base-entity';
 import { UserEntity } from './user.entity';
 import { BLOG_POST_STATUS } from '../../../blogpost/blogpost-types';
+import { CategoryEntity } from './category.entity';
 
 @Entity('blogpost')
 export class BlogpostEntity extends BaseEntity {
@@ -45,4 +46,17 @@ export class BlogpostEntity extends BaseEntity {
     nullable: false,
   })
   status: BLOG_POST_STATUS;
+
+  @Column({
+    nullable: true,
+  })
+  categoryId?: string;
+
+  @ManyToOne('CategoryEntity', {
+    nullable: true,
+  })
+  @JoinColumn({
+    name: 'categoryId',
+  })
+  category?: CategoryEntity;
 }
