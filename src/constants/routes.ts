@@ -29,3 +29,7 @@ export const BLOG_POST_ROUTES = {
   DELETE: ':id',
   PUBLISH: ':id/publish',
 };
+
+export const SEARCH_ROUTES = {
+  SEARCH: 'search',
+};

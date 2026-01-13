@@ -17,13 +17,19 @@ import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
 import { StatusCodes } from 'http-status-codes';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { GetAllBlogPostResponse } from './blogpost.resonse';
-import { BLOG_POST_ROUTES } from 'src/constants/routes';
+import { BLOG_POST_ROUTES, SEARCH_ROUTES } from 'src/constants/routes';
 import responseUtils from 'src/utils/response.utils';
 import type { Response } from 'express';
+import { SearchService } from './search.service';
+import { SearchBlogPostDto } from './dto/search.dto';
+import { SearchResponse } from './search.response';
 
 @Controller(BLOG_POST_ROUTES.BLOG_POST)
 export class BlogpostController {
-  constructor(private readonly blogpostService: BlogpostService) {}
+  constructor(
+    private readonly blogpostService: BlogpostService,
+    private readonly searchService: SearchService,
+  ) {}
 
   @Post(BLOG_POST_ROUTES.CREATE)
   @ApiSwaggerResponse(MessageResponse, {
@@ -53,12 +59,12 @@ export class BlogpostController {
   })
   async findAll(
     @Res() res: Response,
-    @Query() { page = '1', limit = '1', isPagination }: PaginationDto,
+    @Query() { page, limit, isPagination }: PaginationDto,
   ) {
     try {
       const result = await this.blogpostService.findAll(
-        +page,
-        +limit,
+        page,
+        limit,
         isPagination,
       );
       return responseUtils.success(res, {
@@ -116,6 +122,22 @@ export class BlogpostController {
           message: SUCCESS_MESSAGES.SUCCESS,
         },
         transformWith: MessageResponse,
+      });
+    } catch (error) {
+      return responseUtils.error({ res, error });
+    }
+  }
+
+  @ApiSwaggerResponse(SearchResponse, {
+    status: StatusCodes.OK,
+  })
+  @Get(SEARCH_ROUTES.SEARCH)
+  async search(@Res() res: Response, @Query() query: SearchBlogPostDto) {
+    try {
+      const result = await this.searchService.search(query);
+      return responseUtils.success(res, {
+        data: result,
+        transformWith: SearchResponse,
       });
     } catch (error) {
       return responseUtils.error({ res, error });

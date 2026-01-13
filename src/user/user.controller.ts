@@ -32,14 +32,10 @@ export class UserController {
   @UseGuards(RolesGuard())
   async findAll(
     @Res() res: Response,
-    @Query() { page = '1', limit = '1', isPagination }: PaginationDto,
+    @Query() { page, limit, isPagination }: PaginationDto,
   ) {
     try {
-      const result = await this.userService.findAll(
-        +page,
-        +limit,
-        isPagination,
-      );
+      const result = await this.userService.findAll(page, limit, isPagination);
       return responseUtils.success(res, {
         data: result,
         transformWith: FindAllUsersResponse,
