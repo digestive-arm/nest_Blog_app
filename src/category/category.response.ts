@@ -24,6 +24,7 @@ export class CategoryResponse {
   @Expose()
   @ApiPropertyWritable({
     example: 'Summary of your blogpost',
+    nullable: true,
   })
   description?: string;
 }
