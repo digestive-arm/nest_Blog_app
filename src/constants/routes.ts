@@ -42,3 +42,9 @@ export const CATEGORY_ROUTES = {
   UPDATE: ':id',
   DELETE: ':id',
 };
+
+export const UPLOAD_ROUTES = {
+  UPLOAD: 'uploads',
+  CREATE_UPLOAD: '',
+  DELETE_UPLOAD: ':folder/:id',
+};
