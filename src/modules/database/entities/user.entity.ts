@@ -3,6 +3,7 @@ import { BaseEntity } from '../base-entity';
 import { USER_ROLES } from '../../../user/user-types';
 import { RoleApproval } from './role-management.entity';
 import { BlogpostEntity } from './blogpost.entity';
+import { CommentEntity } from './comment.entity';
 
 @Entity('user')
 export class UserEntity extends BaseEntity {
@@ -49,4 +50,9 @@ export class UserEntity extends BaseEntity {
 
   @OneToMany(() => BlogpostEntity, (post) => post.authorId)
   blogPosts: BlogpostEntity[];
+
+  @OneToMany(() => CommentEntity, (comment) => comment.authorId, {
+    nullable: true,
+  })
+  comment?: CommentEntity[];
 }

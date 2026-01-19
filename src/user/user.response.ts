@@ -4,6 +4,7 @@ import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decora
 import { PaginationMetaResponse } from 'src/common/responses/pagination.response';
 import { RoleApproval } from 'src/modules/database/entities/role-management.entity';
 import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
+import { CommentEntity } from 'src/modules/database/entities/comment.entity';
 
 export class UserResponse {
   @Expose()
@@ -50,6 +51,9 @@ export class UserResponse {
 
   @Exclude()
   updatedAt: Date;
+
+  @Exclude()
+  comments: CommentEntity[];
 }
 
 export class FindAllUsersResponse {

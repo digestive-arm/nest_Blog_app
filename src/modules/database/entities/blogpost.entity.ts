@@ -1,8 +1,9 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from '../base-entity';
 import { UserEntity } from './user.entity';
 import { BLOG_POST_STATUS } from '../../../blogpost/blogpost-types';
 import { CategoryEntity } from './category.entity';
+import { CommentEntity } from './comment.entity';
 
 @Entity('blogpost')
 export class BlogpostEntity extends BaseEntity {
@@ -59,4 +60,9 @@ export class BlogpostEntity extends BaseEntity {
     name: 'categoryId',
   })
   category?: CategoryEntity;
+
+  @OneToMany(() => CommentEntity, (comment) => comment.postId, {
+    nullable: true,
+  })
+  comments?: CommentEntity[];
 }
