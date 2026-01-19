@@ -8,9 +8,12 @@ import { OwnershipGuard } from 'src/modules/guards/ownership.guard';
 import { AuthUtils } from 'src/utils/auth.utils';
 import { UserEntity } from 'src/modules/database/entities/user.entity';
 import { SearchService } from './search.service';
+import { CommentEntity } from 'src/modules/database/entities/comment.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([BlogpostEntity, UserEntity])],
+  imports: [
+    TypeOrmModule.forFeature([BlogpostEntity, UserEntity, CommentEntity]),
+  ],
   controllers: [BlogpostController],
   providers: [
     BlogpostService,

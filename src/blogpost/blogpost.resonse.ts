@@ -60,3 +60,30 @@ export class GetAllBlogPostResponse {
   @Type(() => PaginationMetaResponse)
   meta: PaginationMetaResponse;
 }
+
+export class CommentsOnPostResponse {
+  @Expose()
+  id: string;
+  @Expose()
+  content: string;
+  @Expose()
+  createdAt: string;
+  @Expose()
+  authorId: string;
+  @Expose()
+  userName: string;
+}
+export class GetAllCommentesOnPostResponse {
+  @ApiPropertyWritable({
+    type: [CommentsOnPostResponse],
+  })
+  @Expose()
+  @Type(() => CommentsOnPostResponse)
+  data: CommentsOnPostResponse[];
+  @ApiPropertyWritable({
+    type: PaginationMetaResponse,
+  })
+  @Expose()
+  @Type(() => PaginationMetaResponse)
+  meta: PaginationMetaResponse;
+}

@@ -51,7 +51,7 @@ export class UserEntity extends BaseEntity {
   @OneToMany(() => BlogpostEntity, (post) => post.authorId)
   blogPosts: BlogpostEntity[];
 
-  @OneToMany(() => CommentEntity, (comment) => comment.authorId, {
+  @OneToMany(() => CommentEntity, (comment) => comment.user, {
     nullable: true,
   })
   comment?: CommentEntity[];

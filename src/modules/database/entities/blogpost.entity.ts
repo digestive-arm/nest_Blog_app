@@ -61,7 +61,7 @@ export class BlogpostEntity extends BaseEntity {
   })
   category?: CategoryEntity;
 
-  @OneToMany(() => CommentEntity, (comment) => comment.postId, {
+  @OneToMany(() => CommentEntity, (comment) => comment.blogPost, {
     nullable: true,
   })
   comments?: CommentEntity[];
