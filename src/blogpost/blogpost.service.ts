@@ -4,8 +4,14 @@ import { Repository } from 'typeorm';
 import { ERROR_MESSAGES } from 'src/constants/messages.constants';
 import { generateSlug } from 'src/utils/blogpost.utils';
 import { SORT_ORDER, SORTBY } from 'src/common/enums';
-import { paginationMeta } from 'src/common/interfaces/pagination.interfaces';
-import { GET_ALL_BLOG_POST_SELECT } from './blogpost.constants';
+import {
+  paginationInput,
+  paginationMeta,
+} from 'src/common/interfaces/pagination.interfaces';
+import {
+  GET_ALL_BLOG_POST_SELECT,
+  GET_COMMENTS_ON_POST_SELECT,
+} from './blogpost.constants';
 import { BLOG_POST_STATUS } from './blogpost-types';
 import { AttachmentEntity } from 'src/modules/database/entities/attachment.entity';
 import { UploadsService } from 'src/uploads/uploads.service';
@@ -24,6 +30,9 @@ import {
   CreateBlogPostInput,
   UpdateBlogPostInput,
 } from './interfaces/blogpost.interface';
+import { COMMENT_STATUS } from 'src/comments/comments-types';
+import { CommentEntity } from 'src/modules/database/entities/comment.entity';
+import { findExistingEntity } from 'src/utils/db.utils';
 
 @Injectable()
 export class BlogpostService {
@@ -35,6 +44,8 @@ export class BlogpostService {
     @InjectRepository(CategoryEntity)
     private readonly categoryRepository: Repository<CategoryEntity>,
     private readonly attachmentService: UploadsService,
+    @InjectRepository(CommentEntity)
+    private readonly commentRepository: Repository<CommentEntity>,
   ) {}
 
   async create(
@@ -180,6 +191,50 @@ export class BlogpostService {
     }
 
     await this.blogPostRepository.save(blogPost);
+  }
+
+  async processComment(commentId: string, isApproved: boolean) {
+    const status = isApproved
+      ? COMMENT_STATUS.APPROVED
+      : COMMENT_STATUS.REJECTED;
+    const comment = await this.commentRepository.preload({
+      id: commentId,
+      status,
+    });
+    if (!comment) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
+    }
+
+    await this.commentRepository.save(comment);
+  }
+
+  async getCommentsOnPost(
+    id: string,
+    { page, limit, isPagination }: paginationInput,
+  ) {
+    const existingPost = await findExistingEntity(this.blogPostRepository, {
+      id,
+    });
+    if (!existingPost) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
+    }
+    const qb = this.commentRepository
+      .createQueryBuilder('comment')
+      .leftJoinAndSelect('comment.user', 'author')
+      .select(GET_COMMENTS_ON_POST_SELECT)
+      .where('comment.postId = :id', { id })
+      .andWhere('comment.status = :status', {
+        status: COMMENT_STATUS.APPROVED,
+      });
+
+    if (isPagination) {
+      const skip = getOffset(page, limit);
+      qb.skip(skip).limit(limit);
+    }
+
+    const [items, total] = await qb.getManyAndCount();
+    const result = getPageinationMeta({ items, page, limit, total });
+    return result;
   }
 
   async saveAttachment(postId: string, files: Express.Multer.File[]) {

@@ -128,3 +128,46 @@ export class GetAllBlogPostResponse {
   @Type(() => PaginationMetaResponse)
   meta: PaginationMetaResponse;
 }
+
+export class CommentsOnPostResponse {
+  @Expose()
+  @ApiPropertyWritable({
+    example: '6015-eed0-4b5Fc-b399-e91b695f',
+  })
+  id: string;
+
+  @Expose()
+  @ApiPropertyWritable({
+    example: 'Here is the comment',
+  })
+  content: string;
+  @Expose()
+  @ApiPropertyWritable({
+    example: 'date',
+  })
+  createdAt: string;
+  @Expose()
+  @ApiPropertyWritable({
+    example: '6015-eed0-4b5Fc-b399-e91b695f',
+  })
+  authorId: string;
+  @Expose()
+  @ApiPropertyWritable({
+    example: 'digestive_arm',
+  })
+  userName: string;
+}
+export class GetAllCommentesOnPostResponse {
+  @ApiPropertyWritable({
+    type: [CommentsOnPostResponse],
+  })
+  @Expose()
+  @Type(() => CommentsOnPostResponse)
+  data: CommentsOnPostResponse[];
+  @ApiPropertyWritable({
+    type: PaginationMetaResponse,
+  })
+  @Expose()
+  @Type(() => PaginationMetaResponse)
+  meta: PaginationMetaResponse;
+}

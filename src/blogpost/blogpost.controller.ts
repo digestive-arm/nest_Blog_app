@@ -19,7 +19,10 @@ import { ApiSwaggerResponse } from 'src/modules/swagger/swagger.decorator';
 import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
 import { StatusCodes } from 'http-status-codes';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { BlogPostResponse, GetAllBlogPostResponse } from './blogpost.response';
+import {
+  BlogPostResponse, GetAllBlogPostResponse,
+  GetAllCommentesOnPostResponse,
+} from './blogpost.response';
 import { BLOG_POST_ROUTES, SEARCH_ROUTES } from 'src/constants/routes';
 import responseUtils from 'src/utils/response.utils';
 import type { Response } from 'express';
@@ -31,6 +34,7 @@ import { SearchService } from './search.service';
 import { SearchBlogPostDto } from './dto/search.dto';
 import { SearchResponse } from './search.response';
 import { ApiTags } from '@nestjs/swagger';
+import { ProcessCommentDto } from 'src/comments/dto/comment.dto';
 import { FILE_NAME, MAX_UPLOAD_COUNT } from 'src/constants/upload.constants';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { uploadOptions } from 'src/config/upload.config';
@@ -182,6 +186,49 @@ export class BlogpostController {
       });
     } catch (error) {
       return responseUtils.error({ res, error });
+    }
+  }
+
+  @Get(BLOG_POST_ROUTES.GET_COMMENTS_ON_POST)
+  @ApiSwaggerResponse(GetAllCommentesOnPostResponse)
+  async getCommentsOnPost(
+    @Res() res: Response,
+    @Query() { page, limit, isPagination }: PaginationDto,
+    @Param('id') id: string,
+  ) {
+    try {
+      const result = await this.blogpostService.getCommentsOnPost(id, {
+        page,
+        limit,
+        isPagination,
+      });
+      return responseUtils.success(res, {
+        data: result,
+        transformWith: GetAllCommentesOnPostResponse,
+      });
+    } catch (error) {
+      return responseUtils.error({ res, error });
+    }
+  }
+
+  @Patch(BLOG_POST_ROUTES.APPROVE_COMMENT)
+  @ApiSwaggerResponse(MessageResponse)
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR), OwnershipGuard)
+  async processComment(
+    @Res() res: Response,
+    @Body() { isApproved }: ProcessCommentDto,
+    @Param('commentId') commentId: string,
+  ) {
+    try {
+      await this.blogpostService.processComment(commentId, isApproved);
+      return responseUtils.success(res, {
+        data: {
+          message: SUCCESS_MESSAGES.SUCCESS,
+        },
+        transformWith: MessageResponse,
+      });
+    } catch (error) {
+      return responseUtils.error({ error, res });
     }
   }
 }

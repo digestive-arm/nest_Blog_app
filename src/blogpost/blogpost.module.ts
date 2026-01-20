@@ -11,6 +11,7 @@ import { SearchService } from './search.service';
 import { UploadsService } from 'src/uploads/uploads.service';
 import { AttachmentEntity } from 'src/modules/database/entities/attachment.entity';
 import { CategoryEntity } from 'src/modules/database/entities/category.entity';
+import { CommentEntity } from 'src/modules/database/entities/comment.entity';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CategoryEntity } from 'src/modules/database/entities/category.entity';
       BlogpostEntity,
       UserEntity,
       AttachmentEntity,
+      CommentEntity,
       CategoryEntity,
     ]),
   ],
@@ -29,6 +31,9 @@ import { CategoryEntity } from 'src/modules/database/entities/category.entity';
     AuthGuard,
     OwnershipGuard,
     AuthUtils,
+    CategoryEntity,
+    CommentEntity,
+    AttachmentEntity,
     UploadsService,
   ],
   exports: [BlogpostEntity],

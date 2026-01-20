@@ -4,6 +4,7 @@ import { UserEntity } from './user.entity';
 import { BLOG_POST_STATUS } from '../../../blogpost/blogpost-types';
 import { CategoryEntity } from './category.entity';
 import { AttachmentEntity } from './attachment.entity';
+import { CommentEntity } from './comment.entity';
 
 @Entity('blogpost')
 export class BlogpostEntity extends BaseEntity {
@@ -65,4 +66,9 @@ export class BlogpostEntity extends BaseEntity {
     cascade: true,
   })
   attachments: AttachmentEntity[];
+
+  @OneToMany(() => CommentEntity, (comment) => comment.blogPost, {
+    nullable: true,
+  })
+  comments?: CommentEntity[];
 }

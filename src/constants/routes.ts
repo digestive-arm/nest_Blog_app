@@ -29,12 +29,13 @@ export const BLOG_POST_ROUTES = {
   UPDATE: ':id',
   DELETE: ':id',
   PUBLISH: ':id/publish',
+  GET_COMMENTS_ON_POST: ':id/comments',
+  APPROVE_COMMENT: ':id/comments/:commentId/proces-comment',
 };
 
 export const SEARCH_ROUTES = {
   SEARCH: 'search',
 };
-
 export const CATEGORY_ROUTES = {
   CATEGORY: 'category',
   CREATE: '',
@@ -48,4 +49,13 @@ export const UPLOAD_ROUTES = {
   UPLOAD: 'uploads',
   CREATE_UPLOAD: '',
   DELETE_UPLOAD: ':folder/:id',
+};
+
+export const COMMENT_ROUTES = {
+  COMMENT: 'comments',
+  CREATE: '',
+  GET_ONE: ':id',
+  GET_ALL: '',
+  UPDATE: ':id',
+  DELETE: ':id',
 };
