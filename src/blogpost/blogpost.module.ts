@@ -13,7 +13,6 @@ import { AttachmentEntity } from 'src/modules/database/entities/attachment.entit
 import { CategoryEntity } from 'src/modules/database/entities/category.entity';
 import { CommentEntity } from 'src/modules/database/entities/comment.entity';
 import { CommentsService } from 'src/comments/comments.service';
-import { CategoryEntity } from 'src/modules/database/entities/category.entity';
 
 @Module({
   imports: [
