@@ -1,5 +1,5 @@
 import { PaginationMetaResponse } from 'src/common/responses/pagination.response';
-import { BlogPostResponse } from './blogpost.resonse';
+import { BlogPostResponse } from './blogpost.response';
 import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
 import { Expose, Type } from 'class-transformer';
 

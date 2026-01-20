@@ -1,8 +1,3 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
 import { Repository } from 'typeorm';
@@ -10,8 +5,17 @@ import { ERROR_MESSAGES } from 'src/constants/messages.constants';
 import { generateSlug } from 'src/utils/blogpost.utils';
 import { SORT_ORDER, SORTBY } from 'src/common/enums';
 import { paginationMeta } from 'src/common/interfaces/pagination.interfaces';
-import { BLOG_POST_SELECT } from './blogpost.constants';
-
+import { GET_ALL_BLOG_POST_SELECT } from './blogpost.constants';
+import { BLOG_POST_STATUS } from './blogpost-types';
+import { AttachmentEntity } from 'src/modules/database/entities/attachment.entity';
+import { UploadsService } from 'src/uploads/uploads.service';
+import { UploadResult } from 'src/uploads/upload.interface';
+import { CategoryEntity } from 'src/modules/database/entities/category.entity';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   getOffset,
   getPageinationMeta,
@@ -20,16 +24,23 @@ import {
   CreateBlogPostInput,
   UpdateBlogPostInput,
 } from './interfaces/blogpost.interface';
-import { BLOG_POST_STATUS } from './blogpost-types';
 
 @Injectable()
 export class BlogpostService {
   constructor(
     @InjectRepository(BlogpostEntity)
     private readonly blogPostRepository: Repository<BlogpostEntity>,
+    @InjectRepository(AttachmentEntity)
+    private readonly attachmentRepository: Repository<AttachmentEntity>,
+    @InjectRepository(CategoryEntity)
+    private readonly categoryRepository: Repository<CategoryEntity>,
+    private readonly attachmentService: UploadsService,
   ) {}
 
-  async create(createBlogPostInput: CreateBlogPostInput): Promise<void> {
+  async create(
+    createBlogPostInput: CreateBlogPostInput,
+    files: Express.Multer.File[],
+  ): Promise<void> {
     const existing = await this.blogPostRepository.exists({
       where: { title: createBlogPostInput.title },
     });
@@ -39,11 +50,26 @@ export class BlogpostService {
     }
 
     const blogPost = this.blogPostRepository.create(createBlogPostInput);
-    const slug = generateSlug(blogPost.title, blogPost.id);
+    blogPost.slug = generateSlug(blogPost.title);
 
-    blogPost.slug = slug;
+    if (createBlogPostInput.categoryId) {
+      const exisingCategory = await this.categoryRepository
+        .createQueryBuilder('category')
+        .where('category.id = :id', {
+          id: createBlogPostInput.categoryId,
+        })
+        .getOne();
 
-    await this.blogPostRepository.save(blogPost);
+      if (!exisingCategory) {
+        throw new NotFoundException('No category exists with provided id');
+      }
+
+      blogPost.categoryId = createBlogPostInput.categoryId;
+    }
+
+    const savedPost = await this.blogPostRepository.save(blogPost);
+
+    await this.saveAttachment(savedPost.id, files);
   }
 
   async findAll(
@@ -53,7 +79,8 @@ export class BlogpostService {
   ): Promise<paginationMeta> {
     const queryBuilder = this.blogPostRepository
       .createQueryBuilder('post')
-      .select(BLOG_POST_SELECT)
+      .leftJoin('post.attachments', 'attachment')
+      .select(GET_ALL_BLOG_POST_SELECT)
       .orderBy(`post.${SORTBY.CREATED_AT}`, SORT_ORDER.DESC);
 
     if (isPagination) {
@@ -66,24 +93,66 @@ export class BlogpostService {
     return result;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} blogpost`;
-  }
-
-  async update(id: string, updateBlogPostInput: UpdateBlogPostInput) {
-    const result = await this.blogPostRepository.preload({
-      id: id,
-      ...updateBlogPostInput,
-    });
+  async findOne(slug: string) {
+    const result = await this.blogPostRepository
+      .createQueryBuilder('post')
+      .leftJoin('post.attachments', 'attachment')
+      .select(GET_ALL_BLOG_POST_SELECT)
+      .where('post.slug = :slug', {
+        slug,
+      })
+      .getOne();
 
     if (!result) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
-    const newSlug = generateSlug(updateBlogPostInput.title, id);
-    result.slug = newSlug;
+    return result;
+  }
 
-    await this.blogPostRepository.save(result);
+  async update(id: string, updateBlogPostInput: UpdateBlogPostInput) {
+    if (updateBlogPostInput.categoryId) {
+      const existingCategory = await this.categoryRepository
+        .createQueryBuilder('category')
+        .where('category.id = :id', {
+          id: updateBlogPostInput.categoryId,
+        })
+        .getOne();
+
+      if (!existingCategory) {
+        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
+      }
+    }
+    let slug: string = '';
+
+    if (updateBlogPostInput.title) {
+      slug = generateSlug(updateBlogPostInput.title, id);
+      const existing = await this.blogPostRepository
+        .createQueryBuilder('post')
+        .where('post.title = :title OR post.slug = :slug', {
+          title: updateBlogPostInput.title,
+          slug,
+        })
+        .getOne();
+
+      if (existing) {
+        throw new ConflictException(ERROR_MESSAGES.CONFLICT);
+      }
+    }
+    const blogPost = await this.blogPostRepository.preload({
+      id: id,
+      ...updateBlogPostInput,
+    });
+
+    if (!blogPost) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
+    }
+
+    if (updateBlogPostInput.title) {
+      blogPost.slug = slug;
+    }
+
+    await this.blogPostRepository.save(blogPost);
   }
 
   async remove(id: string) {
@@ -111,5 +180,34 @@ export class BlogpostService {
     }
 
     await this.blogPostRepository.save(blogPost);
+  }
+
+  async saveAttachment(postId: string, files: Express.Multer.File[]) {
+    let uploads: UploadResult[] = [];
+    try {
+      if (files.length) {
+        uploads = (
+          await this.attachmentService.uploadMultipleAttachments(files)
+        ).data;
+      }
+
+      if (uploads.length) {
+        await this.attachmentRepository.save(
+          uploads.map((u) => ({
+            postId,
+            publicId: u.public_id,
+            url: u.secure_url,
+          })),
+        );
+      }
+    } catch (error) {
+      if (uploads.length) {
+        await this.attachmentService.deleteMultipleAttachments(
+          uploads.map((u) => u.public_id),
+        );
+      }
+
+      throw error;
+    }
   }
 }

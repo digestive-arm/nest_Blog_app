@@ -25,6 +25,7 @@ export const BLOG_POST_ROUTES = {
   BLOG_POST: 'blogpost',
   CREATE: '',
   GET_ALL: '',
+  GET_ONE: ':slug',
   UPDATE: ':id',
   DELETE: ':id',
   PUBLISH: ':id/publish',

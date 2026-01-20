@@ -8,9 +8,19 @@ import { OwnershipGuard } from 'src/modules/guards/ownership.guard';
 import { AuthUtils } from 'src/utils/auth.utils';
 import { UserEntity } from 'src/modules/database/entities/user.entity';
 import { SearchService } from './search.service';
+import { UploadsService } from 'src/uploads/uploads.service';
+import { AttachmentEntity } from 'src/modules/database/entities/attachment.entity';
+import { CategoryEntity } from 'src/modules/database/entities/category.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([BlogpostEntity, UserEntity])],
+  imports: [
+    TypeOrmModule.forFeature([
+      BlogpostEntity,
+      UserEntity,
+      AttachmentEntity,
+      CategoryEntity,
+    ]),
+  ],
   controllers: [BlogpostController],
   providers: [
     BlogpostService,
@@ -19,6 +29,7 @@ import { SearchService } from './search.service';
     AuthGuard,
     OwnershipGuard,
     AuthUtils,
+    UploadsService,
   ],
   exports: [BlogpostEntity],
 })
