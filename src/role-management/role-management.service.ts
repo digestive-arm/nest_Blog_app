@@ -99,21 +99,6 @@ export class RoleManagementService {
     if (!requestExists) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
-    const updateStatus = isApproved
-      ? RoleApprovalStatus.APPROVED
-      : RoleApprovalStatus.REJECTED;
-
-    const roleApproval = await this.roleApprovalRepository.preload({
-      id: roleApprovalRequestId,
-      status: updateStatus,
-    });
-
-    if (!roleApproval) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
-    }
-
-    await this.roleApprovalRepository.save(roleApproval);
-
     const { userId, requestedRole: role } = requestExists;
 
     if (isApproved) {
@@ -128,5 +113,10 @@ export class RoleManagementService {
 
       await this.userRepository.save(user);
     }
+    requestExists.status = isApproved
+      ? RoleApprovalStatus.APPROVED
+      : RoleApprovalStatus.REJECTED;
+
+    await this.roleApprovalRepository.save(requestExists);
   }
 }
