@@ -91,6 +91,7 @@ export class CategoryController {
 
   @Patch(CATEGORY_ROUTES.UPDATE)
   @ApiSwaggerResponse(MessageResponse)
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   update(
     @Res() res: Response,
     @Param('id') id: string,
@@ -111,6 +112,7 @@ export class CategoryController {
 
   @Delete(CATEGORY_ROUTES.DELETE)
   @ApiSwaggerResponse(MessageResponse)
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   async remove(@Res() res: Response, @Param('id') id: string) {
     try {
       await this.categoryService.remove(id);
