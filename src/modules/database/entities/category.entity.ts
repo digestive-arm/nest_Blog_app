@@ -17,16 +17,13 @@ export class CategoryEntity extends BaseEntity {
   slug: string;
 
   @Column({
-    unique: true,
     nullable: true,
   })
   description?: string;
 
   @Column({
-    unique: true,
     nullable: false,
     default: false,
-    type: Boolean,
   })
   isActive: boolean;
 

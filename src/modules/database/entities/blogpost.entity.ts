@@ -55,6 +55,7 @@ export class BlogpostEntity extends BaseEntity {
   categoryId?: string;
 
   @ManyToOne(() => CategoryEntity, (category) => category.blogPosts, {
+    onDelete: 'SET NULL',
     nullable: true,
   })
   @JoinColumn({
