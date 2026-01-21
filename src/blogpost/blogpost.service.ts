@@ -18,6 +18,7 @@ import {
   GET_ALL_BLOG_POST_SELECT,
   GET_COMMENTS_ON_POST_SELECT,
   SEARCH_QUERY,
+  SOFT_DELETED_POSTS_CLEANUP_INTERVAL,
 } from './blogpost.constants';
 import { BLOG_POST_STATUS } from './blogpost-types';
 import { AttachmentEntity } from 'src/modules/database/entities/attachment.entity';
@@ -261,5 +262,37 @@ export class BlogpostService {
 
       throw error;
     }
+  }
+
+  async cleanupSoftDeleteRecords() {
+    const cutOffDate = new Date();
+    cutOffDate.setDate(
+      cutOffDate.getDate() - SOFT_DELETED_POSTS_CLEANUP_INTERVAL,
+    );
+
+    const expiredPosts = await this.blogPostRepository
+      .createQueryBuilder('post')
+      .leftJoinAndSelect('post.attachments', 'image')
+      .select(['post.id', 'image.id', 'image.publicId'])
+      .withDeleted()
+      .where('post.deletedAt < :cutOffDate', {
+        cutOffDate,
+      })
+      .getMany();
+
+    if (expiredPosts.length === 0) return;
+
+    const postIds = expiredPosts.map((post) => post.id);
+    const attachmentPublicIds = expiredPosts.flatMap((post) =>
+      post.attachments.map((attachment) => attachment.publicId),
+    );
+
+    if (attachmentPublicIds.length > 0) {
+      await this.attachmentService.deleteMultipleAttachments(
+        attachmentPublicIds,
+      );
+    }
+
+    await this.blogPostRepository.delete(postIds);
   }
 }
