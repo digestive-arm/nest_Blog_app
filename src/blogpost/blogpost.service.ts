@@ -268,14 +268,19 @@ export class BlogpostService {
   }
 
   async cleanupSoftDeleteRecords() {
+    const cutOffDate = new Date();
+    cutOffDate.setDate(
+      cutOffDate.getDate() - SOFT_DELETED_POSTS_CLEANUP_INTERVAL,
+    );
+
     const expiredPosts = await this.blogPostRepository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.attachments', 'image')
       .select(['post.id', 'image.id', 'image.publicId'])
       .withDeleted()
-      .where(
-        `post.deletedAt < NOW() - INTERVAL '${SOFT_DELETED_POSTS_CLEANUP_INTERVAL} days'`,
-      )
+      .where('post.deletedAt < :cutOffDate', {
+        cutOffDate,
+      })
       .getMany();
 
     if (expiredPosts.length === 0) return;
@@ -291,11 +296,6 @@ export class BlogpostService {
       );
     }
 
-    await this.blogPostRepository
-      .createQueryBuilder()
-      .delete()
-      .from('blogpost')
-      .where('id IN (:...ids)', { ids: postIds })
-      .execute();
+    await this.blogPostRepository.delete(postIds);
   }
 }
