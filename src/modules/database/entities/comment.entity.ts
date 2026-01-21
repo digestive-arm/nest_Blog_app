@@ -15,8 +15,6 @@ export class CommentEntity extends BaseEntity {
   @Column({
     nullable: false,
     default: COMMENT_STATUS.PENDING,
-    type: 'enum',
-    enum: COMMENT_STATUS,
   })
   status: COMMENT_STATUS;
 
