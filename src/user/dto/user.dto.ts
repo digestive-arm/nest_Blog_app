@@ -1,33 +1,33 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { updateUserParams } from '../user-types';
-import { IsNotEmpty, MinLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, MinLength } from 'class-validator';
 import { TrimString } from 'src/modules/decorators/trim-string.decorator';
 
 export class UpdateUserDto implements updateUserParams {
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'john_doe',
     description: 'username you wish to have',
   })
   @MinLength(5, {
     message: 'Username must be longer than or equal to $constraint1 characters',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @TrimString()
   readonly userName: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'john',
     description: 'Your firstname',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @TrimString()
   readonly firstName: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'doe',
     description: 'Your lastname',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @TrimString()
   readonly lastName: string;
 }

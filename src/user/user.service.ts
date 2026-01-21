@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -18,6 +19,8 @@ import {
   getOffset,
   getPageinationMeta,
 } from 'src/common/helper/pagination.helper';
+import { findExistingEntity } from 'src/utils/db.utils';
+import { copyFile } from 'fs';
 
 @Injectable()
 export class UserService {
@@ -67,6 +70,19 @@ export class UserService {
     id: string,
     updateUserParams: updateUserParams,
   ): Promise<void> {
+    if (userId !== id) {
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
+    }
+
+    if (updateUserParams.userName) {
+      const existing = await findExistingEntity(this.userRepository, {
+        userName: updateUserParams.userName,
+      });
+
+      if (existing) {
+        throw new ConflictException(ERROR_MESSAGES.CONFLICT);
+      }
+    }
     const result = await this.userRepository.preload({
       id: id,
       ...updateUserParams,
@@ -74,10 +90,6 @@ export class UserService {
 
     if (!result) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
-    }
-
-    if (userId !== id) {
-      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
     }
 
     await this.userRepository.save(result);
