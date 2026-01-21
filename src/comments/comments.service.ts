@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CommentEntity } from 'src/modules/database/entities/comment.entity';
 import { Repository } from 'typeorm';
@@ -35,11 +39,7 @@ export class CommentsService {
       status: BLOG_POST_STATUS.PUBLISHED,
     });
 
-    const existingAuthor = await findExistingEntity(this.userRepository, {
-      id: createCommentInput.authorId,
-    });
-
-    if (!existingPost || !existingAuthor) {
+    if (!existingPost) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
     const comment = this.commentRepository.create(createCommentInput);
@@ -75,13 +75,38 @@ export class CommentsService {
     return comment;
   }
 
-  async update(id: string, updateCommentInput: UpdateCommentInput) {
-    const comment = await this.commentRepository.preload({
-      id,
-      ...updateCommentInput,
-    });
-    if (!comment) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
+  async update(
+    userId: string,
+    commentId: string,
+    updateCommentInput: UpdateCommentInput,
+  ) {
+    const comment = await this.commentRepository
+      .createQueryBuilder('comment')
+      .leftJoinAndSelect('comment.blogPost', 'blogpost')
+      .where('comment.id = :id', {
+        id: commentId,
+      })
+      .getOne();
+
+    if (!comment) throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
+
+    const isCommentOwner = comment.authorId === userId;
+    const isPostOwner = comment.blogPost.authorId === userId;
+
+    if (updateCommentInput.content && !isCommentOwner) {
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
+    }
+    if (updateCommentInput.content)
+      comment.content = updateCommentInput.content;
+
+    if (updateCommentInput.isApproved !== undefined && !isPostOwner) {
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
+    }
+
+    if (updateCommentInput.isApproved !== undefined) {
+      comment.status = updateCommentInput.isApproved
+        ? COMMENT_STATUS.APPROVED
+        : COMMENT_STATUS.REJECTED;
     }
 
     await this.commentRepository.save(comment);

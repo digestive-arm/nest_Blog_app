@@ -7,13 +7,10 @@ import {
   Param,
   Delete,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { CommentsService } from './comments.service';
-import {
-  CreateCommentDto,
-  ProcessCommentDto,
-  UpdateCommentDto,
-} from './dto/comment.dto';
+import { UpdateCommentDto } from './dto/comment.dto';
 import { COMMENT_ROUTES } from 'src/constants/routes';
 import { ApiTags } from '@nestjs/swagger';
 import { type Response } from 'express';
@@ -24,33 +21,14 @@ import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
 import { ApiSwaggerResponse } from 'src/modules/swagger/swagger.decorator';
 import { StatusCodes } from 'http-status-codes';
 import { CommentResponse, GetAllCommentResponse } from './comment.response';
+import { CurrentUser } from 'src/modules/decorators/get-current-user.decorator';
+import { type TokenPayload } from 'src/auth/auth-types';
+import { AuthGuard } from 'src/modules/guards/auth.guard';
 
 @ApiTags(COMMENT_ROUTES.COMMENT)
 @Controller(COMMENT_ROUTES.COMMENT)
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
-
-  @Post(COMMENT_ROUTES.CREATE)
-  @ApiSwaggerResponse(MessageResponse, {
-    status: StatusCodes.CREATED,
-  })
-  async create(
-    @Res() res: Response,
-    @Body() { content, authorId, postId }: CreateCommentDto,
-  ) {
-    try {
-      await this.commentsService.create({ content, authorId, postId });
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.CREATED,
-        },
-        transformWith: MessageResponse,
-        status: StatusCodes.CREATED,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
-  }
 
   @Get(COMMENT_ROUTES.GET_ALL)
   @ApiSwaggerResponse(GetAllCommentResponse)
@@ -88,14 +66,16 @@ export class CommentsController {
   }
 
   @Patch(COMMENT_ROUTES.UPDATE)
+  @UseGuards(AuthGuard)
   @ApiSwaggerResponse(MessageResponse)
-  update(
+  async update(
     @Res() res: Response,
+    @CurrentUser() user: TokenPayload,
     @Param('id') id: string,
     @Body() updateCommentDto: UpdateCommentDto,
   ) {
     try {
-      this.commentsService.update(id, updateCommentDto);
+      await this.commentsService.update(user.id, id, updateCommentDto);
       return responseUtils.success(res, {
         data: {
           message: SUCCESS_MESSAGES.UPDATED,

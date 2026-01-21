@@ -2,8 +2,8 @@ export interface CreateBlogPostInput {
   title: string;
   content: string;
   summary?: string;
-  authorId: string;
   categoryId?: string;
+  authorId: string;
 }
 
 export interface UpdateBlogPostInput {

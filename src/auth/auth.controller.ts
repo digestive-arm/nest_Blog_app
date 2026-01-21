@@ -5,6 +5,8 @@ import {
   Req,
   Post,
   UnauthorizedException,
+  Get,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { Response, Request } from 'express';
@@ -23,11 +25,25 @@ import {
   SUCCESS_MESSAGES,
 } from 'src/constants/messages.constants';
 import { AUTH_ROUTES } from 'src/constants/routes';
+import { CurrentUser } from 'src/modules/decorators/get-current-user.decorator';
+import { AuthGuard } from 'src/modules/guards/auth.guard';
+import { type TokenPayload } from './auth-types';
+import { CurrentUserResponse } from './auth.response';
 
 @ApiTags(AUTH_ROUTES.AUTH)
 @Controller(AUTH_ROUTES.AUTH)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @ApiSwaggerResponse(CurrentUserResponse)
+  @Get(AUTH_ROUTES.ME)
+  @UseGuards(AuthGuard)
+  getMe(@Res() res: Response, @CurrentUser() user: TokenPayload) {
+    return responseUtils.success(res, {
+      data: user,
+      transformWith: CurrentUserResponse,
+    });
+  }
 
   @Post(AUTH_ROUTES.REGISTER)
   @ApiBody({

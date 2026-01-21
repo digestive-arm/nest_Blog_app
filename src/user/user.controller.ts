@@ -22,6 +22,9 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { USER_ROUTES } from 'src/constants/routes';
 import { RolesGuard } from 'src/modules/guards/role.guard';
 import { ApiTags } from '@nestjs/swagger';
+import { USER_ROLES } from './user-types';
+import { CurrentUser } from 'src/modules/decorators/get-current-user.decorator';
+import { type TokenPayload } from 'src/auth/auth-types';
 
 @ApiTags(USER_ROUTES.USER)
 @Controller(USER_ROUTES.USER)
@@ -31,13 +34,17 @@ export class UserController {
 
   @ApiSwaggerResponse(FindAllUsersResponse)
   @Get()
-  @UseGuards(RolesGuard())
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   async findAll(
     @Res() res: Response,
     @Query() { page, limit, isPagination }: PaginationDto,
   ) {
     try {
-      const result = await this.userService.findAll(page, limit, isPagination);
+      const result = await this.userService.findAll({
+        page,
+        limit,
+        isPagination,
+      });
       return responseUtils.success(res, {
         data: result,
         transformWith: FindAllUsersResponse,
@@ -49,6 +56,7 @@ export class UserController {
 
   @ApiSwaggerResponse(UserResponse)
   @Get(USER_ROUTES.FIND_ONE)
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   async findOne(@Res() res: Response, @Param('id') id: string) {
     try {
       const result = await this.userService.findOne(id);
@@ -63,13 +71,15 @@ export class UserController {
 
   @ApiSwaggerResponse(MessageResponse)
   @Patch(USER_ROUTES.UPDATE)
+  @UseGuards(AuthGuard)
   update(
     @Res() res: Response,
+    @CurrentUser() user: TokenPayload,
     @Param('id') id: string,
     @Body() updateUserParams: UpdateUserDto,
   ) {
     try {
-      this.userService.update(id, updateUserParams);
+      this.userService.update(user.id, id, updateUserParams);
       responseUtils.success(res, {
         data: {
           message: SUCCESS_MESSAGES.UPDATED,
@@ -83,6 +93,7 @@ export class UserController {
 
   @ApiSwaggerResponse(MessageResponse)
   @Delete(USER_ROUTES.DELETE)
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   remove(@Res() res: Response, @Param('id') id: string) {
     try {
       this.userService.remove(id);

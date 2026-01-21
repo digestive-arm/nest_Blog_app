@@ -4,6 +4,19 @@ import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decora
 import { BLOG_POST_STATUS } from './blogpost-types';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
+class UserDataInCommentResponse {
+  @Expose()
+  @ApiPropertyWritable({
+    example: '6015-eed0-4b5Fc-b399-e91b695f',
+  })
+  id: string;
+
+  @Expose()
+  @ApiPropertyWritable({
+    example: 'digestive_arm',
+  })
+  userName: string;
+}
 
 class AttachmentResponseForBlogPost {
   @Expose()
@@ -146,16 +159,13 @@ export class CommentsOnPostResponse {
     example: 'date',
   })
   createdAt: string;
+
   @Expose()
   @ApiPropertyWritable({
-    example: '6015-eed0-4b5Fc-b399-e91b695f',
+    type: UserDataInCommentResponse,
   })
-  authorId: string;
-  @Expose()
-  @ApiPropertyWritable({
-    example: 'digestive_arm',
-  })
-  userName: string;
+  @Type(() => UserDataInCommentResponse)
+  user: UserDataInCommentResponse;
 }
 export class GetAllCommentesOnPostResponse {
   @ApiPropertyWritable({

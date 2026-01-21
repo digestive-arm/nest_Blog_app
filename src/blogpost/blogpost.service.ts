@@ -1,3 +1,9 @@
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
 import { Repository } from 'typeorm';
@@ -11,18 +17,13 @@ import {
 import {
   GET_ALL_BLOG_POST_SELECT,
   GET_COMMENTS_ON_POST_SELECT,
+  SEARCH_QUERY,
   SOFT_DELETED_POSTS_CLEANUP_INTERVAL,
 } from './blogpost.constants';
 import { BLOG_POST_STATUS } from './blogpost-types';
 import { AttachmentEntity } from 'src/modules/database/entities/attachment.entity';
 import { UploadsService } from 'src/uploads/uploads.service';
 import { UploadResult } from 'src/uploads/upload.interface';
-import { CategoryEntity } from 'src/modules/database/entities/category.entity';
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
 import {
   getOffset,
   getPageinationMeta,
@@ -34,6 +35,7 @@ import {
 import { COMMENT_STATUS } from 'src/comments/comments-types';
 import { CommentEntity } from 'src/modules/database/entities/comment.entity';
 import { findExistingEntity } from 'src/utils/db.utils';
+import { CategoryEntity } from 'src/modules/database/entities/category.entity';
 
 @Injectable()
 export class BlogpostService {
@@ -44,40 +46,39 @@ export class BlogpostService {
     private readonly attachmentRepository: Repository<AttachmentEntity>,
     @InjectRepository(CategoryEntity)
     private readonly categoryRepository: Repository<CategoryEntity>,
-    private readonly attachmentService: UploadsService,
     @InjectRepository(CommentEntity)
     private readonly commentRepository: Repository<CommentEntity>,
+    private readonly attachmentService: UploadsService,
   ) {}
 
   async create(
     createBlogPostInput: CreateBlogPostInput,
     files: Express.Multer.File[],
   ): Promise<void> {
-    const existing = await this.blogPostRepository.exists({
-      where: { title: createBlogPostInput.title },
+    const existing = await findExistingEntity(this.blogPostRepository, {
+      title: createBlogPostInput.title,
     });
-
     if (existing) {
       throw new ConflictException(ERROR_MESSAGES.CONFLICT);
     }
 
     const blogPost = this.blogPostRepository.create(createBlogPostInput);
-    blogPost.slug = generateSlug(blogPost.title);
 
     if (createBlogPostInput.categoryId) {
-      const exisingCategory = await this.categoryRepository
-        .createQueryBuilder('category')
-        .where('category.id = :id', {
+      const existingCategory = await findExistingEntity(
+        this.categoryRepository,
+        {
           id: createBlogPostInput.categoryId,
-        })
-        .getOne();
+        },
+      );
 
-      if (!exisingCategory) {
-        throw new NotFoundException('No category exists with provided id');
+      if (!existingCategory) {
+        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
       }
-
       blogPost.categoryId = createBlogPostInput.categoryId;
     }
+
+    blogPost.slug = generateSlug(blogPost.title);
 
     const savedPost = await this.blogPostRepository.save(blogPost);
 
@@ -85,21 +86,27 @@ export class BlogpostService {
   }
 
   async findAll(
-    page: number,
-    limit: number,
-    isPagination: boolean,
+    { page, limit, isPagination }: paginationInput,
+    q?: string,
   ): Promise<paginationMeta> {
-    const queryBuilder = this.blogPostRepository
+    const qb = this.blogPostRepository
       .createQueryBuilder('post')
       .leftJoin('post.attachments', 'attachment')
-      .select(GET_ALL_BLOG_POST_SELECT)
-      .orderBy(`post.${SORTBY.CREATED_AT}`, SORT_ORDER.DESC);
+      .select(GET_ALL_BLOG_POST_SELECT);
+    if (q) {
+      qb.where(SEARCH_QUERY, {
+        q: `%${q}%`,
+      });
+    }
+    qb.andWhere('post.status = :status', {
+      status: BLOG_POST_STATUS.PUBLISHED,
+    }).orderBy(`post.${SORTBY.CREATED_AT}`, SORT_ORDER.DESC);
 
     if (isPagination) {
       const offset = getOffset(page, limit);
-      queryBuilder.skip(offset).take(limit);
+      qb.skip(offset).take(limit);
     }
-    const [items, total] = await queryBuilder.getManyAndCount();
+    const [items, total] = await qb.getManyAndCount();
     const result = getPageinationMeta({ items, page, limit, total });
 
     return result;
@@ -122,46 +129,51 @@ export class BlogpostService {
     return result;
   }
 
-  async update(id: string, updateBlogPostInput: UpdateBlogPostInput) {
-    if (updateBlogPostInput.categoryId) {
-      const existingCategory = await this.categoryRepository
-        .createQueryBuilder('category')
-        .where('category.id = :id', {
-          id: updateBlogPostInput.categoryId,
-        })
-        .getOne();
-
-      if (!existingCategory) {
-        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
-      }
-    }
-    let slug: string = '';
-
-    if (updateBlogPostInput.title) {
-      slug = generateSlug(updateBlogPostInput.title, id);
-      const existing = await this.blogPostRepository
-        .createQueryBuilder('post')
-        .where('post.title = :title OR post.slug = :slug', {
-          title: updateBlogPostInput.title,
-          slug,
-        })
-        .getOne();
-
-      if (existing) {
-        throw new ConflictException(ERROR_MESSAGES.CONFLICT);
-      }
-    }
-    const blogPost = await this.blogPostRepository.preload({
-      id: id,
-      ...updateBlogPostInput,
-    });
+  async update(
+    userId: string,
+    id: string,
+    updateBlogPostInput: UpdateBlogPostInput,
+  ) {
+    const blogPost = await this.blogPostRepository
+      .createQueryBuilder('post')
+      .where('post.id = :id', {
+        id,
+      })
+      .getOne();
 
     if (!blogPost) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
+    const isOwnerOfPost = blogPost.authorId === userId;
+
+    if (!isOwnerOfPost) {
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
+    }
+
+    if (updateBlogPostInput.content)
+      blogPost.content = updateBlogPostInput.content;
+
+    if (updateBlogPostInput.summary)
+      blogPost.summary = updateBlogPostInput.summary;
+
     if (updateBlogPostInput.title) {
-      blogPost.slug = slug;
+      blogPost.title = updateBlogPostInput.title;
+      blogPost.slug = generateSlug(updateBlogPostInput.title, id);
+    }
+
+    if (updateBlogPostInput.categoryId) {
+      const existingCategory = await findExistingEntity(
+        this.categoryRepository,
+        {
+          id: updateBlogPostInput.categoryId,
+        },
+      );
+
+      if (!existingCategory) {
+        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
+      }
+      blogPost.categoryId = updateBlogPostInput.categoryId;
     }
 
     await this.blogPostRepository.save(blogPost);
@@ -192,21 +204,6 @@ export class BlogpostService {
     }
 
     await this.blogPostRepository.save(blogPost);
-  }
-
-  async processComment(commentId: string, isApproved: boolean) {
-    const status = isApproved
-      ? COMMENT_STATUS.APPROVED
-      : COMMENT_STATUS.REJECTED;
-    const comment = await this.commentRepository.preload({
-      id: commentId,
-      status,
-    });
-    if (!comment) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
-    }
-
-    await this.commentRepository.save(comment);
   }
 
   async getCommentsOnPost(

@@ -20,7 +20,8 @@ import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
 import { StatusCodes } from 'http-status-codes';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import {
-  BlogPostResponse, GetAllBlogPostResponse,
+  BlogPostResponse,
+  GetAllBlogPostResponse,
   GetAllCommentesOnPostResponse,
 } from './blogpost.response';
 import { BLOG_POST_ROUTES, SEARCH_ROUTES } from 'src/constants/routes';
@@ -30,11 +31,13 @@ import { AuthGuard } from 'src/modules/guards/auth.guard';
 import { RolesGuard } from 'src/modules/guards/role.guard';
 import { USER_ROLES } from 'src/user/user-types';
 import { OwnershipGuard } from 'src/modules/guards/ownership.guard';
-import { SearchService } from './search.service';
 import { SearchBlogPostDto } from './dto/search.dto';
 import { SearchResponse } from './search.response';
 import { ApiTags } from '@nestjs/swagger';
-import { ProcessCommentDto } from 'src/comments/dto/comment.dto';
+import { CreateCommentDto } from 'src/comments/dto/comment.dto';
+import { CommentsService } from 'src/comments/comments.service';
+import { type TokenPayload } from 'src/auth/auth-types';
+import { CurrentUser } from 'src/modules/decorators/get-current-user.decorator';
 import { FILE_NAME, MAX_UPLOAD_COUNT } from 'src/constants/upload.constants';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { uploadOptions } from 'src/config/upload.config';
@@ -44,7 +47,7 @@ import { uploadOptions } from 'src/config/upload.config';
 export class BlogpostController {
   constructor(
     private readonly blogpostService: BlogpostService,
-    private readonly searchService: SearchService,
+    private readonly commentService: CommentsService,
   ) {}
 
   @UseInterceptors(FilesInterceptor(FILE_NAME, MAX_UPLOAD_COUNT, uploadOptions))
@@ -54,16 +57,23 @@ export class BlogpostController {
     status: StatusCodes.CREATED,
   })
   async create(
+    @CurrentUser() user: TokenPayload,
     @Res() res: Response,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body()
-    { title, content, summary, authorId, categoryId }: CreateBlogPostDto,
+    @Body() { title, content, summary, categoryId }: CreateBlogPostDto,
   ) {
     try {
       await this.blogpostService.create(
-        { title, content, summary, authorId, categoryId },
+        {
+          title,
+          categoryId,
+          content,
+          summary,
+          authorId: user.id,
+        },
         files,
       );
+
       return responseUtils.success(res, {
         data: {
           message: SUCCESS_MESSAGES.CREATED,
@@ -82,13 +92,16 @@ export class BlogpostController {
   })
   async findAll(
     @Res() res: Response,
-    @Query() { page, limit, isPagination }: PaginationDto,
+    @Query() { q, isPagination, page, limit }: SearchBlogPostDto,
   ) {
     try {
       const result = await this.blogpostService.findAll(
-        page,
-        limit,
-        isPagination,
+        {
+          page,
+          limit,
+          isPagination,
+        },
+        q,
       );
       return responseUtils.success(res, {
         data: result,
@@ -117,17 +130,19 @@ export class BlogpostController {
 
   @ApiSwaggerResponse(MessageResponse)
   @Patch(BLOG_POST_ROUTES.UPDATE)
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
   async update(
     @Res() res: Response,
+    @CurrentUser() user: TokenPayload,
     @Param('id') id: string,
     @Body() { title, content, summary, categoryId }: UpdateBlogPostDto,
   ) {
     try {
-      await this.blogpostService.update(id, {
+      await this.blogpostService.update(user.id, id, {
         title,
+        categoryId,
         content,
         summary,
-        categoryId,
       });
       return responseUtils.success(res, {
         data: {
@@ -141,7 +156,7 @@ export class BlogpostController {
   }
 
   @ApiSwaggerResponse(MessageResponse)
-  @Delete(BLOG_POST_ROUTES.UPDATE)
+  @Delete(BLOG_POST_ROUTES.DELETE)
   remove(@Res() res: Response, @Param('id') id: string) {
     try {
       this.blogpostService.remove(id);
@@ -173,16 +188,25 @@ export class BlogpostController {
     }
   }
 
-  @ApiSwaggerResponse(SearchResponse, {
-    status: StatusCodes.OK,
+  @Post(BLOG_POST_ROUTES.CREATE_COMMENT)
+  @ApiSwaggerResponse(MessageResponse, {
+    status: StatusCodes.CREATED,
   })
-  @Get(SEARCH_ROUTES.SEARCH)
-  async search(@Res() res: Response, @Query() query: SearchBlogPostDto) {
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
+  async createComment(
+    @Res() res: Response,
+    @CurrentUser() user: TokenPayload,
+    @Param('id') postId: string,
+    @Body() { content }: CreateCommentDto,
+  ) {
     try {
-      const result = await this.searchService.search(query);
+      await this.commentService.create({ content, authorId: user.id, postId });
       return responseUtils.success(res, {
-        data: result,
-        transformWith: SearchResponse,
+        data: {
+          message: SUCCESS_MESSAGES.CREATED,
+        },
+        transformWith: MessageResponse,
+        status: StatusCodes.CREATED,
       });
     } catch (error) {
       return responseUtils.error({ res, error });
@@ -208,27 +232,6 @@ export class BlogpostController {
       });
     } catch (error) {
       return responseUtils.error({ res, error });
-    }
-  }
-
-  @Patch(BLOG_POST_ROUTES.APPROVE_COMMENT)
-  @ApiSwaggerResponse(MessageResponse)
-  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR), OwnershipGuard)
-  async processComment(
-    @Res() res: Response,
-    @Body() { isApproved }: ProcessCommentDto,
-    @Param('commentId') commentId: string,
-  ) {
-    try {
-      await this.blogpostService.processComment(commentId, isApproved);
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.SUCCESS,
-        },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ error, res });
     }
   }
 }

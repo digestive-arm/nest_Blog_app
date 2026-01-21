@@ -5,5 +5,6 @@ export interface CreateCommentInput {
 }
 
 export interface UpdateCommentInput {
+  isApproved?: boolean;
   content: string;
 }

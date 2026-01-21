@@ -7,11 +7,11 @@ import { AuthGuard } from 'src/modules/guards/auth.guard';
 import { OwnershipGuard } from 'src/modules/guards/ownership.guard';
 import { AuthUtils } from 'src/utils/auth.utils';
 import { UserEntity } from 'src/modules/database/entities/user.entity';
-import { SearchService } from './search.service';
 import { UploadsService } from 'src/uploads/uploads.service';
 import { AttachmentEntity } from 'src/modules/database/entities/attachment.entity';
 import { CategoryEntity } from 'src/modules/database/entities/category.entity';
 import { CommentEntity } from 'src/modules/database/entities/comment.entity';
+import { CommentsService } from 'src/comments/comments.service';
 
 @Module({
   imports: [
@@ -26,8 +26,8 @@ import { CommentEntity } from 'src/modules/database/entities/comment.entity';
   controllers: [BlogpostController],
   providers: [
     BlogpostService,
+    CommentsService,
     BlogpostEntity,
-    SearchService,
     AuthGuard,
     OwnershipGuard,
     AuthUtils,
