@@ -1,6 +1,7 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,7 +13,6 @@ import { Repository } from 'typeorm';
 import { USER_ROLES } from 'src/user/user-types';
 import { UserEntity } from 'src/modules/database/entities/user.entity';
 import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import { ID_SELECT_FIELDS } from 'src/user/user.constants';
 import { findExistingEntity } from 'src/utils/db.utils';
 
 @Injectable()
@@ -54,11 +54,9 @@ export class RoleManagementService {
 
   //get my requests
   async getMyRequests(id: string): Promise<Partial<RoleApproval[]>> {
-    const user = await this.userRepository
-      .createQueryBuilder('user')
-      .select(ID_SELECT_FIELDS)
-      .where('user.id = :id', { id })
-      .getOne();
+    const user = await findExistingEntity(this.userRepository, {
+      id,
+    });
 
     if (!user) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
@@ -70,10 +68,6 @@ export class RoleManagementService {
         id,
       })
       .getMany();
-
-    if (result.length === 0) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
-    }
 
     return result;
   }

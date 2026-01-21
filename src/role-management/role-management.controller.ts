@@ -41,9 +41,9 @@ export class RoleManagementController {
   //get my requests
   @ApiSwaggerResponse(MyRequestsResponse)
   @Get(ROLE_MANAGEMENT_ROUTES.MY_REQUESTS)
-  async getMyRequests(@Res() res: Response, @Param('id') userId: string) {
+  async getMyRequests(@Res() res: Response, @CurrentUser() user: TokenPayload) {
     try {
-      const result = await this.roleManagementService.getMyRequests(userId);
+      const result = await this.roleManagementService.getMyRequests(user.id);
 
       return responseUtils.success(res, {
         data: result,
