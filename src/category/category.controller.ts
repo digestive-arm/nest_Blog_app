@@ -9,6 +9,7 @@ import {
   Delete,
   Res,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
@@ -21,6 +22,9 @@ import { StatusCodes } from 'http-status-codes';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { CategoryResponse, GetAllCategoryResponse } from './category.response';
 import { ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from 'src/modules/guards/auth.guard';
+import { RolesGuard } from 'src/modules/guards/role.guard';
+import { USER_ROLES } from 'src/user/user-types';
 
 @ApiTags(CATEGORY_ROUTES.CATEGORY)
 @Controller(CATEGORY_ROUTES.CATEGORY)
@@ -31,6 +35,7 @@ export class CategoryController {
   @ApiSwaggerResponse(MessageResponse, {
     status: StatusCodes.CREATED,
   })
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   async create(
     @Res() res: Response,
     @Body() { name, description }: CreateCategoryDto,
