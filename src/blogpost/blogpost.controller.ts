@@ -176,12 +176,16 @@ export class BlogpostController {
     }
   }
 
-  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR), OwnershipGuard)
   @ApiSwaggerResponse(MessageResponse)
   @Patch(BLOG_POST_ROUTES.PUBLISH)
-  publish(@Res() res: Response, @Param('id') id: string) {
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
+  publish(
+    @Res() res: Response,
+    @CurrentUser() user: TokenPayload,
+    @Param('id') id: string,
+  ) {
     try {
-      this.blogpostService.publish(id);
+      this.blogpostService.publish(id, user);
       return responseUtils.success(res, {
         data: {
           message: SUCCESS_MESSAGES.SUCCESS,

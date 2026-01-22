@@ -201,7 +201,7 @@ export class BlogpostService {
     await this.blogPostRepository.softRemove(blogPost);
   }
 
-  async publish(id: string) {
+  async publish(id: string, user: TokenPayload) {
     const blogPost = await this.blogPostRepository.preload({
       id,
       status: BLOG_POST_STATUS.PUBLISHED,
@@ -210,6 +210,10 @@ export class BlogpostService {
     if (!blogPost) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
+
+    const isOwner = blogPost.authorId === user.id;
+
+    if (!isOwner) throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
 
     await this.blogPostRepository.save(blogPost);
   }
