@@ -32,7 +32,6 @@ export const BLOG_POST_ROUTES = {
   PUBLISH: ':id/status',
   CREATE_COMMENT: ':id/comments',
   GET_COMMENTS_ON_POST: ':id/comments',
-  APPROVE_COMMENT: ':id/comments/:commentId/proces-comment',
 };
 
 export const SEARCH_ROUTES = {

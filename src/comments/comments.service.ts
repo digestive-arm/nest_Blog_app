@@ -22,6 +22,8 @@ import {
   getOffset,
   getPageinationMeta,
 } from 'src/common/helper/pagination.helper';
+import { TokenPayload } from 'src/auth/auth-types';
+import { USER_ROLES } from 'src/user/user-types';
 
 @Injectable()
 export class CommentsService {
@@ -112,7 +114,7 @@ export class CommentsService {
     await this.commentRepository.save(comment);
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: TokenPayload) {
     const comment = await this.commentRepository
       .createQueryBuilder('comment')
       .where('comment.id = :id', {
@@ -123,6 +125,11 @@ export class CommentsService {
     if (!comment) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
+    const isOwner = comment.authorId === user.id;
+    const isAdmin = user.role === USER_ROLES.ADMIN;
+
+    if (!isOwner && !isAdmin)
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
 
     await this.commentRepository.softRemove(comment);
   }
