@@ -35,18 +35,14 @@ export class CategoryController {
     @Res() res: Response,
     @Body() { name, description }: CreateCategoryDto,
   ) {
-    try {
-      await this.categoryService.create({ name, description });
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.CREATED,
-        },
-        transformWith: MessageResponse,
-        status: StatusCodes.CREATED,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    await this.categoryService.create({ name, description });
+    return responseUtils.success(res, {
+      data: {
+        message: SUCCESS_MESSAGES.CREATED,
+      },
+      transformWith: MessageResponse,
+      status: StatusCodes.CREATED,
+    });
   }
 
   @Get(CATEGORY_ROUTES.GET_ALL)
@@ -55,33 +51,25 @@ export class CategoryController {
     @Res() res: Response,
     @Query() { page, limit, isPagination }: PaginationDto,
   ) {
-    try {
-      const result = await this.categoryService.findAll({
-        page,
-        limit,
-        isPagination,
-      });
-      return responseUtils.success(res, {
-        data: result,
-        transformWith: GetAllCategoryResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    const result = await this.categoryService.findAll({
+      page,
+      limit,
+      isPagination,
+    });
+    return responseUtils.success(res, {
+      data: result,
+      transformWith: GetAllCategoryResponse,
+    });
   }
 
   @Get(CATEGORY_ROUTES.GET_ONE)
   @ApiSwaggerResponse(CategoryResponse)
   async findOne(@Res() res: Response, @Param('id') id: string) {
-    try {
-      const result = await this.categoryService.findOne(id);
-      return responseUtils.success(res, {
-        data: result,
-        transformWith: CategoryResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    const result = await this.categoryService.findOne(id);
+    return responseUtils.success(res, {
+      data: result,
+      transformWith: CategoryResponse,
+    });
   }
 
   @Patch(CATEGORY_ROUTES.UPDATE)
@@ -91,32 +79,24 @@ export class CategoryController {
     @Param('id') id: string,
     @Body() { name, description, isActive }: UpdateCategoryDto,
   ) {
-    try {
-      this.categoryService.update(id, { name, description, isActive });
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.SUCCESS,
-        },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    this.categoryService.update(id, { name, description, isActive });
+    return responseUtils.success(res, {
+      data: {
+        message: SUCCESS_MESSAGES.SUCCESS,
+      },
+      transformWith: MessageResponse,
+    });
   }
 
   @Delete(CATEGORY_ROUTES.DELETE)
   @ApiSwaggerResponse(MessageResponse)
   async remove(@Res() res: Response, @Param('id') id: string) {
-    try {
-      await this.categoryService.remove(id);
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.SUCCESS,
-        },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    await this.categoryService.remove(id);
+    return responseUtils.success(res, {
+      data: {
+        message: SUCCESS_MESSAGES.SUCCESS,
+      },
+      transformWith: MessageResponse,
+    });
   }
 }
