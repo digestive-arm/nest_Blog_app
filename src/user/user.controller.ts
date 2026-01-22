@@ -39,34 +39,26 @@ export class UserController {
     @Res() res: Response,
     @Query() { page, limit, isPagination }: PaginationDto,
   ) {
-    try {
-      const result = await this.userService.findAll({
-        page,
-        limit,
-        isPagination,
-      });
-      return responseUtils.success(res, {
-        data: result,
-        transformWith: FindAllUsersResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    const result = await this.userService.findAll({
+      page,
+      limit,
+      isPagination,
+    });
+    return responseUtils.success(res, {
+      data: result,
+      transformWith: FindAllUsersResponse,
+    });
   }
 
   @ApiSwaggerResponse(UserResponse)
   @Get(USER_ROUTES.FIND_ONE)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   async findOne(@Res() res: Response, @Param('id') id: string) {
-    try {
-      const result = await this.userService.findOne(id);
-      return responseUtils.success(res, {
-        data: result,
-        transformWith: UserResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    const result = await this.userService.findOne(id);
+    return responseUtils.success(res, {
+      data: result,
+      transformWith: UserResponse,
+    });
   }
 
   @ApiSwaggerResponse(MessageResponse)
@@ -78,33 +70,25 @@ export class UserController {
     @Param('id') id: string,
     @Body() updateUserParams: UpdateUserDto,
   ) {
-    try {
-      this.userService.update(user.id, id, updateUserParams);
-      responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.UPDATED,
-        },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    this.userService.update(user.id, id, updateUserParams);
+    responseUtils.success(res, {
+      data: {
+        message: SUCCESS_MESSAGES.UPDATED,
+      },
+      transformWith: MessageResponse,
+    });
   }
 
   @ApiSwaggerResponse(MessageResponse)
   @Delete(USER_ROUTES.DELETE)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   remove(@Res() res: Response, @Param('id') id: string) {
-    try {
-      this.userService.remove(id);
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.DELETED,
-        },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    this.userService.remove(id);
+    return responseUtils.success(res, {
+      data: {
+        message: SUCCESS_MESSAGES.DELETED,
+      },
+      transformWith: MessageResponse,
+    });
   }
 }
