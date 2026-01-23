@@ -9,7 +9,7 @@ export const refreshTokenCookieConfig: CookieOptions = {
 };
 
 export const accessTokenCookieConfig: CookieOptions = {
-  maxAge: Number(secretConfig.accessCookieExpirationTime),
+  maxAge: Number(secretConfig.accessCookieExpirationTime) * 60 * 1000,
   httpOnly: true,
   secure: false, //dev
   path: '/',
