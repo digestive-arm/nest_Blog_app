@@ -47,7 +47,9 @@ export class CategoryService {
 
   async findAll({ page, limit, isPagination }: paginationInput) {
     const qb = this.categoryRepository.createQueryBuilder('category');
-    qb.select(CATEGORY_SELECT);
+    qb.select(CATEGORY_SELECT).where('category.isActive = :isActive', {
+      isActive: true,
+    });
 
     if (isPagination) {
       const offSet = getOffset(page, limit);
