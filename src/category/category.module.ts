@@ -9,17 +9,9 @@ import { AuthUtils } from 'src/utils/auth.utils';
 import { UserEntity } from 'src/modules/database/entities/user.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([CategoryEntity, BlogpostEntity, UserEntity]),
-  ],
+  imports: [TypeOrmModule.forFeature([CategoryEntity, UserEntity])],
   controllers: [CategoryController],
-  providers: [
-    CategoryService,
-    CategoryEntity,
-    BlogpostEntity,
-    AuthGuard,
-    AuthUtils,
-  ],
+  providers: [CategoryService, CategoryEntity, AuthGuard, AuthUtils],
   exports: [CategoryService, CategoryEntity],
 })
 export class CategoryModule {}

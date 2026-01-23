@@ -3,8 +3,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
-import { CreateCategoryInput } from './interfaces/category.interface';
+import {
+  CreateCategoryInput,
+  UpdateCategoryInput,
+} from './interfaces/category.interface';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CategoryEntity } from 'src/modules/database/entities/category.entity';
 import { Not, Repository } from 'typeorm';
@@ -14,15 +16,12 @@ import { paginationInput } from 'src/common/interfaces/pagination.interfaces';
 import { getPageinationMeta } from 'src/common/helper/pagination.helper';
 import { getOffset } from '../common/helper/pagination.helper';
 import { CATEGORY_SELECT } from './category.constants';
-import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
 
 @Injectable()
 export class CategoryService {
   constructor(
     @InjectRepository(CategoryEntity)
     private readonly categoryRepository: Repository<CategoryEntity>,
-    @InjectRepository(BlogpostEntity)
-    private readonly blogPostRepository: Repository<BlogpostEntity>,
   ) {}
 
   async create({ name, description }: CreateCategoryInput): Promise<void> {
@@ -79,7 +78,7 @@ export class CategoryService {
     return result;
   }
 
-  async update(id: string, updateCategoryInput: UpdateCategoryDto) {
+  async update(id: string, updateCategoryInput: UpdateCategoryInput) {
     const category = await this.categoryRepository.findOne({
       where: { id },
     });
@@ -127,12 +126,6 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
-    await this.blogPostRepository
-      .createQueryBuilder()
-      .update()
-      .set({ categoryId: () => 'NULL' })
-      .where({ categoryId: id })
-      .execute();
 
     await this.categoryRepository.softRemove(category);
   }
