@@ -4,7 +4,6 @@ import { BlogpostController } from './blogpost.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
 import { AuthGuard } from 'src/modules/guards/auth.guard';
-import { OwnershipGuard } from 'src/modules/guards/ownership.guard';
 import { AuthUtils } from 'src/utils/auth.utils';
 import { UserEntity } from 'src/modules/database/entities/user.entity';
 import { UploadsService } from 'src/uploads/uploads.service';
@@ -29,7 +28,6 @@ import { CommentsService } from 'src/comments/comments.service';
     CommentsService,
     BlogpostEntity,
     AuthGuard,
-    OwnershipGuard,
     AuthUtils,
     CategoryEntity,
     CommentEntity,

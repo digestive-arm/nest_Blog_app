@@ -1,4 +1,3 @@
-import { OWNERSHIP_GUARD_BLOG_POST_SELECT } from '../blogpost/blogpost.constants';
 export const USER_SELECT_FIELDS = [
   'user.id',
   'user.email',
