@@ -1,3 +1,4 @@
+import { USER_ROLES } from 'src/user/user-types';
 import {
   BadRequestException,
   Body,
@@ -29,6 +30,8 @@ import {
 import { ROLE_MANAGEMENT_ROUTES } from 'src/constants/routes';
 import { RolesGuard } from 'src/modules/guards/role.guard';
 import { ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from 'src/modules/decorators/get-current-user.decorator';
+import { type TokenPayload } from 'src/auth/auth-types';
 
 @ApiTags(ROLE_MANAGEMENT_ROUTES.ROLE)
 @Controller(ROLE_MANAGEMENT_ROUTES.ROLE)
@@ -39,9 +42,9 @@ export class RoleManagementController {
   //get my requests
   @ApiSwaggerResponse(MyRequestsResponse)
   @Get(ROLE_MANAGEMENT_ROUTES.MY_REQUESTS)
-  async getMyRequests(@Res() res: Response, @Param('id') userId: string) {
+  async getMyRequests(@Res() res: Response, @CurrentUser() user: TokenPayload) {
     try {
-      const result = await this.roleManagementService.getMyRequests(userId);
+      const result = await this.roleManagementService.getMyRequests(user.id);
 
       return responseUtils.success(res, {
         data: result,
@@ -58,7 +61,7 @@ export class RoleManagementController {
   async requestUpdgrade(
     @Res() res: Response,
     @Body() updateRoleDto: UpdateRoleDto,
-    @Param('id') userId: string,
+    @CurrentUser() user: TokenPayload,
   ) {
     if (!updateRoleDto.role) {
       throw new BadRequestException(ERROR_MESSAGES.BAD_REQUEST);
@@ -67,7 +70,7 @@ export class RoleManagementController {
     try {
       await this.roleManagementService.requestUpdgrade(
         updateRoleDto.role,
-        userId,
+        user.id,
       );
 
       return responseUtils.success(res, {
@@ -82,7 +85,7 @@ export class RoleManagementController {
   //get pending reqests
   @ApiSwaggerResponse(PendingRequestsResponse, {})
   @Get(ROLE_MANAGEMENT_ROUTES.PENDING_REQUESTS)
-  @UseGuards(RolesGuard())
+  @UseGuards(RolesGuard(USER_ROLES.ADMIN))
   async getPendingRequest(@Res() res: Response) {
     try {
       const result = await this.roleManagementService.getPendingRequest();
@@ -97,7 +100,7 @@ export class RoleManagementController {
   //approve / reject request
   @ApiSwaggerResponse(MessageResponse)
   @Patch(ROLE_MANAGEMENT_ROUTES.PROCESS_REQUEST)
-  @UseGuards(RolesGuard())
+  @UseGuards(RolesGuard(USER_ROLES.ADMIN))
   async processRequest(
     @Res() res: Response,
     @Body() { isApproved }: processRoleApprovalRequestDto,

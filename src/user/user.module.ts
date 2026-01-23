@@ -10,7 +10,7 @@ import { AuthUtils } from 'src/utils/auth.utils';
 @Module({
   imports: [TypeOrmModule.forFeature([UserEntity, RoleApproval])],
   controllers: [UserController],
-  providers: [UserService, UserEntity, AuthUtils, AuthGuard],
+  providers: [UserService, AuthUtils, AuthGuard],
   exports: [TypeOrmModule.forFeature([UserEntity])],
 })
 export class UserModule {}

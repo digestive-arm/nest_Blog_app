@@ -5,7 +5,7 @@ export enum USER_ROLES {
 }
 
 export interface updateUserParams {
-  userName: string;
-  firstName: string;
-  lastName: string;
+  userName?: string;
+  firstName?: string;
+  lastName?: string;
 }

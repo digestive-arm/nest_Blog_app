@@ -9,8 +9,8 @@ export const AUTH_ROUTES = {
 
 export const ROLE_MANAGEMENT_ROUTES = {
   ROLE: 'role-requests',
-  MY_REQUESTS: ':id/my-requests',
-  UPGRADE_ROLE: ':id',
+  MY_REQUESTS: 'my-requests',
+  UPGRADE_ROLE: '',
   PENDING_REQUESTS: 'pending-requests',
   PROCESS_REQUEST: ':id',
 };
@@ -32,7 +32,6 @@ export const BLOG_POST_ROUTES = {
   PUBLISH: ':id/status',
   CREATE_COMMENT: ':id/comments',
   GET_COMMENTS_ON_POST: ':id/comments',
-  APPROVE_COMMENT: ':id/comments/:commentId/proces-comment',
 };
 
 export const SEARCH_ROUTES = {

@@ -24,32 +24,13 @@ import { CommentResponse, GetAllCommentResponse } from './comment.response';
 import { CurrentUser } from 'src/modules/decorators/get-current-user.decorator';
 import { type TokenPayload } from 'src/auth/auth-types';
 import { AuthGuard } from 'src/modules/guards/auth.guard';
+import { RolesGuard } from 'src/modules/guards/role.guard';
+import { USER_ROLES } from 'src/user/user-types';
 
 @ApiTags(COMMENT_ROUTES.COMMENT)
 @Controller(COMMENT_ROUTES.COMMENT)
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
-
-  @Get(COMMENT_ROUTES.GET_ALL)
-  @ApiSwaggerResponse(GetAllCommentResponse)
-  async findAll(
-    @Res() res: Response,
-    @Param() { page, limit, isPagination }: PaginationDto,
-  ) {
-    try {
-      const result = await this.commentsService.findAll({
-        page,
-        limit,
-        isPagination,
-      });
-      return responseUtils.success(res, {
-        data: result,
-        transformWith: GetAllCommentResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
-  }
 
   @Get(COMMENT_ROUTES.GET_ONE)
   @ApiSwaggerResponse(CommentResponse)
@@ -66,7 +47,7 @@ export class CommentsController {
   }
 
   @Patch(COMMENT_ROUTES.UPDATE)
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
   @ApiSwaggerResponse(MessageResponse)
   async update(
     @Res() res: Response,
@@ -89,9 +70,14 @@ export class CommentsController {
 
   @Delete(COMMENT_ROUTES.DELETE)
   @ApiSwaggerResponse(MessageResponse)
-  async remove(@Res() res: Response, @Param('id') id: string) {
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
+  async remove(
+    @Res() res: Response,
+    @CurrentUser() user: TokenPayload,
+    @Param('id') id: string,
+  ) {
     try {
-      await this.commentsService.remove(id);
+      await this.commentsService.remove(id, user);
       return responseUtils.success(res, {
         data: {
           message: SUCCESS_MESSAGES.DELETED,

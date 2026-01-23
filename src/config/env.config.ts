@@ -15,4 +15,6 @@ export const secretConfig = {
   accessTokenExpirationTime: getOsEnv('JWT_ACCESS_EXPIRATION_TIME'),
   refreshTokenExpirationTime: getOsEnv('JWT_REFRESH_EXPIRATION_TIME'),
   aesEncryptionKey: getOsEnv('AES_ENCRYPTION_KEY'),
+  accessCookieExpirationTime: getOsEnv('ACCESS_COOKIE_EXPIRATION_TIME'),
+  refreshCookieExpirationDay: getOsEnv('REFRESH_COOKIE_EXPIRATION_DAY'),
 };

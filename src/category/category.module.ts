@@ -4,11 +4,22 @@ import { CategoryController } from './category.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CategoryEntity } from 'src/modules/database/entities/category.entity';
 import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
+import { AuthGuard } from 'src/modules/guards/auth.guard';
+import { AuthUtils } from 'src/utils/auth.utils';
+import { UserEntity } from 'src/modules/database/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CategoryEntity, BlogpostEntity])],
+  imports: [
+    TypeOrmModule.forFeature([CategoryEntity, BlogpostEntity, UserEntity]),
+  ],
   controllers: [CategoryController],
-  providers: [CategoryService, CategoryEntity, BlogpostEntity],
+  providers: [
+    CategoryService,
+    CategoryEntity,
+    BlogpostEntity,
+    AuthGuard,
+    AuthUtils,
+  ],
   exports: [CategoryService, CategoryEntity],
 })
 export class CategoryModule {}

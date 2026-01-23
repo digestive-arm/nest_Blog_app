@@ -36,6 +36,8 @@ import { COMMENT_STATUS } from 'src/comments/comments-types';
 import { CommentEntity } from 'src/modules/database/entities/comment.entity';
 import { findExistingEntity } from 'src/utils/db.utils';
 import { CategoryEntity } from 'src/modules/database/entities/category.entity';
+import { TokenPayload } from 'src/auth/auth-types';
+import { USER_ROLES } from 'src/user/user-types';
 
 @Injectable()
 export class BlogpostService {
@@ -179,7 +181,7 @@ export class BlogpostService {
     await this.blogPostRepository.save(blogPost);
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: TokenPayload) {
     const blogPost = await this.blogPostRepository.findOne({
       where: {
         id,
@@ -190,10 +192,16 @@ export class BlogpostService {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
+    const isOwner = blogPost.authorId === user.id;
+    const isAdmin = user.role === USER_ROLES.ADMIN;
+
+    if (!isOwner && !isAdmin)
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
+
     await this.blogPostRepository.softRemove(blogPost);
   }
 
-  async publish(id: string) {
+  async publish(id: string, user: TokenPayload) {
     const blogPost = await this.blogPostRepository.preload({
       id,
       status: BLOG_POST_STATUS.PUBLISHED,
@@ -202,6 +210,10 @@ export class BlogpostService {
     if (!blogPost) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
+
+    const isOwner = blogPost.authorId === user.id;
+
+    if (!isOwner) throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
 
     await this.blogPostRepository.save(blogPost);
   }

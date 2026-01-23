@@ -157,9 +157,14 @@ export class BlogpostController {
 
   @ApiSwaggerResponse(MessageResponse)
   @Delete(BLOG_POST_ROUTES.DELETE)
-  remove(@Res() res: Response, @Param('id') id: string) {
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
+  async remove(
+    @Res() res: Response,
+    @CurrentUser() user: TokenPayload,
+    @Param('id') id: string,
+  ) {
     try {
-      this.blogpostService.remove(id);
+      await this.blogpostService.remove(id, user);
       return responseUtils.success(res, {
         data: {
           message: SUCCESS_MESSAGES.DELETED,
@@ -171,12 +176,16 @@ export class BlogpostController {
     }
   }
 
-  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR), OwnershipGuard)
   @ApiSwaggerResponse(MessageResponse)
   @Patch(BLOG_POST_ROUTES.PUBLISH)
-  publish(@Res() res: Response, @Param('id') id: string) {
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
+  publish(
+    @Res() res: Response,
+    @CurrentUser() user: TokenPayload,
+    @Param('id') id: string,
+  ) {
     try {
-      this.blogpostService.publish(id);
+      this.blogpostService.publish(id, user);
       return responseUtils.success(res, {
         data: {
           message: SUCCESS_MESSAGES.SUCCESS,

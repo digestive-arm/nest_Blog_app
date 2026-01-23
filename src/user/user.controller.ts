@@ -72,14 +72,14 @@ export class UserController {
   @ApiSwaggerResponse(MessageResponse)
   @Patch(USER_ROUTES.UPDATE)
   @UseGuards(AuthGuard)
-  update(
+  async update(
     @Res() res: Response,
     @CurrentUser() user: TokenPayload,
     @Param('id') id: string,
     @Body() updateUserParams: UpdateUserDto,
   ) {
     try {
-      this.userService.update(user.id, id, updateUserParams);
+      await this.userService.update(user.id, id, updateUserParams);
       responseUtils.success(res, {
         data: {
           message: SUCCESS_MESSAGES.UPDATED,
@@ -94,9 +94,9 @@ export class UserController {
   @ApiSwaggerResponse(MessageResponse)
   @Delete(USER_ROUTES.DELETE)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
-  remove(@Res() res: Response, @Param('id') id: string) {
+  async remove(@Res() res: Response, @Param('id') id: string) {
     try {
-      this.userService.remove(id);
+      await this.userService.remove(id);
       return responseUtils.success(res, {
         data: {
           message: SUCCESS_MESSAGES.DELETED,

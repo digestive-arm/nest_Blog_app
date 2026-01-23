@@ -15,8 +15,8 @@ import responseUtils from 'src/utils/response.utils';
 import { StatusCodes } from 'http-status-codes';
 import { ApiTags, ApiBody } from '@nestjs/swagger';
 import {
-  refreshTokenConfig,
-  accessTokenConfig,
+  refreshTokenCookieConfig,
+  accessTokenCookieConfig,
 } from 'src/config/cookie.config';
 import { ApiSwaggerResponse } from 'src/modules/swagger/swagger.decorator';
 import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
@@ -72,8 +72,8 @@ export class AuthController {
         password,
       });
 
-      res.cookie('refreshToken', refreshToken, refreshTokenConfig);
-      res.cookie('accessToken', accessToken, accessTokenConfig);
+      res.cookie('refreshToken', refreshToken, refreshTokenCookieConfig);
+      res.cookie('accessToken', accessToken, accessTokenCookieConfig);
 
       return responseUtils.success(res, {
         data: { message: SUCCESS_MESSAGES.LOGGED_IN },
@@ -97,8 +97,8 @@ export class AuthController {
       const { accessToken, refreshToken } =
         await this.authService.refresh(oldRefrshToken);
 
-      res.cookie('refreshToken', refreshToken, refreshTokenConfig);
-      res.cookie('accessToken', accessToken, accessTokenConfig);
+      res.cookie('refreshToken', refreshToken, refreshTokenCookieConfig);
+      res.cookie('accessToken', accessToken, accessTokenCookieConfig);
 
       return responseUtils.success(res, {
         data: { message: SUCCESS_MESSAGES.SUCCESS },
