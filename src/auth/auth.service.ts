@@ -3,19 +3,22 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { UserEntity } from 'src/modules/database/entities/user.entity';
-import { AuthUtils } from 'src/utils/auth.utils';
-import { Repository } from 'typeorm';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { Repository } from "typeorm";
+
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
+import { UserEntity } from "src/modules/database/entities/user.entity";
+import { USER_CONSTANTS } from "src/user/user.constants";
+import { AuthUtils } from "src/utils/auth.utils";
+
 import {
   createUserParams,
   loginUserParams,
   AuthResponse,
   TokenPayload,
-} from './auth-types';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import { USER_CONSTANTS } from 'src/user/user.constants';
+} from "./auth-types";
 
 @Injectable()
 export class AuthService {
@@ -28,10 +31,10 @@ export class AuthService {
   async login(loginUserParams: loginUserParams): Promise<AuthResponse> {
     const { email, password } = loginUserParams;
     const user = await this.userRepository
-      .createQueryBuilder('user')
+      .createQueryBuilder("user")
       .select(USER_CONSTANTS.LOGIN_SELECT_FIELDS)
-      .addSelect('user.password')
-      .where('user.email = :email', {
+      .addSelect("user.password")
+      .where("user.email = :email", {
         email,
       })
       .getOne();
@@ -74,12 +77,12 @@ export class AuthService {
     lastName,
   }: createUserParams): Promise<void> {
     const existingUser = await this.userRepository
-      .createQueryBuilder('user')
+      .createQueryBuilder("user")
       .select(USER_CONSTANTS.REGISTER_SELECT_FIELDS)
-      .where('user.email = :email', {
+      .where("user.email = :email", {
         email,
       })
-      .orWhere('user.userName = :userName', {
+      .orWhere("user.userName = :userName", {
         userName,
       })
       .getOne();
@@ -103,8 +106,8 @@ export class AuthService {
     const tokenPayload = this.authUtils.decodeToken(receivedRefreshToken);
     const { id } = tokenPayload;
 
-    delete tokenPayload['iat'];
-    delete tokenPayload['exp'];
+    delete tokenPayload["iat"];
+    delete tokenPayload["exp"];
 
     const accessToken = this.authUtils.generateAccessToken(tokenPayload);
     const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);

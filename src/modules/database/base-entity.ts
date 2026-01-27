@@ -1,5 +1,4 @@
-import { Exclude } from 'class-transformer';
-import { UserEntity } from './entities/user.entity';
+import { Exclude } from "class-transformer";
 import {
   Column,
   CreateDateColumn,
@@ -8,18 +7,20 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-} from 'typeorm';
+} from "typeorm";
+
+import { UserEntity } from "./entities/user.entity";
 
 export class BaseEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Exclude()
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: "timestamp" })
   createdAt: Date;
 
   @Exclude()
-  @UpdateDateColumn({ type: 'timestamp' })
+  @UpdateDateColumn({ type: "timestamp" })
   updatedAt: Date;
 
   @Exclude()
@@ -27,8 +28,8 @@ export class BaseEntity {
   createdBy?: string;
 
   @Exclude()
-  @ManyToOne('UserEntity', { nullable: true })
-  @JoinColumn({ name: 'createdBy' })
+  @ManyToOne("UserEntity", { nullable: true })
+  @JoinColumn({ name: "createdBy" })
   creator?: UserEntity;
 
   @Exclude()
@@ -36,13 +37,13 @@ export class BaseEntity {
   updatedBy?: string;
 
   @Exclude()
-  @ManyToOne('UserEntity', { nullable: true })
-  @JoinColumn({ name: 'updatedBy' })
+  @ManyToOne("UserEntity", { nullable: true })
+  @JoinColumn({ name: "updatedBy" })
   updater?: UserEntity;
 
   @Exclude()
   @DeleteDateColumn({
-    type: 'timestamp',
+    type: "timestamp",
   })
   deletedAt?: Date;
 }

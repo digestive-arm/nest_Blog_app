@@ -1,21 +1,22 @@
-import { InjectRepository } from '@nestjs/typeorm';
 import {
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { Repository, DataSource } from "typeorm";
+
+import { TokenPayload } from "src/auth/auth-types";
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
 import {
   RoleApproval,
   RoleApprovalStatus,
-} from 'src/modules/database/entities/role-management.entity';
-import { Repository } from 'typeorm';
-import { USER_ROLES } from 'src/user/user-types';
-import { UserEntity } from 'src/modules/database/entities/user.entity';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import { findExistingEntity } from 'src/utils/db.utils';
-import { DataSource } from 'typeorm';
-import { TokenPayload } from 'src/auth/auth-types';
+} from "src/modules/database/entities/role-management.entity";
+import { UserEntity } from "src/modules/database/entities/user.entity";
+import { USER_ROLES } from "src/user/user-types";
+import { findExistingEntity } from "src/utils/db.utils";
 
 @Injectable()
 export class RoleManagementService {
@@ -27,8 +28,8 @@ export class RoleManagementService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  //request upgrade
-  async requestUpdgrade(
+  // request upgrade
+  async requestUpgrade(
     requestedRole: USER_ROLES,
     user: TokenPayload,
   ): Promise<void> {
@@ -62,7 +63,7 @@ export class RoleManagementService {
     });
   }
 
-  //get my requests
+  // get my requests
   async getMyRequests(id: string): Promise<Partial<RoleApproval[]>> {
     const user = await findExistingEntity(this.userRepository, {
       id,
@@ -73,8 +74,8 @@ export class RoleManagementService {
     }
 
     const result = await this.roleApprovalRepository
-      .createQueryBuilder('role')
-      .where('role.userId = :id', {
+      .createQueryBuilder("role")
+      .where("role.userId = :id", {
         id,
       })
       .getMany();
@@ -82,11 +83,11 @@ export class RoleManagementService {
     return result;
   }
 
-  //get pending reqests
+  // get pending requests
   async getPendingRequest(): Promise<RoleApproval[]> {
     const result = await this.roleApprovalRepository
-      .createQueryBuilder('role')
-      .where('role.status = :status', {
+      .createQueryBuilder("role")
+      .where("role.status = :status", {
         status: RoleApprovalStatus.PENDING,
       })
       .getMany();
@@ -94,7 +95,7 @@ export class RoleManagementService {
     return result;
   }
 
-  //approve / reject request
+  // approve / reject request
   async processRequest(
     isApproved: boolean,
     roleApprovalRequestId: string,
@@ -106,8 +107,8 @@ export class RoleManagementService {
       const transactionalUserRepo = manager.withRepository(this.userRepository);
 
       const requestExists = await transactionalRoleRepo
-        .createQueryBuilder('role')
-        .where('role.id = :roleApprovalRequestId', {
+        .createQueryBuilder("role")
+        .where("role.id = :roleApprovalRequestId", {
           roleApprovalRequestId,
         })
         .getOne();

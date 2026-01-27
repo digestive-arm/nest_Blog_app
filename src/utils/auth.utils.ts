@@ -1,10 +1,13 @@
-import { SignOptions, verify, sign } from 'jsonwebtoken';
-import { UnauthorizedException } from '@nestjs/common/exceptions';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import { secretConfig } from 'src/config/env.config';
-import { Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
-import { TokenPayload } from '../auth/auth-types';
+import { Injectable } from "@nestjs/common";
+import { UnauthorizedException } from "@nestjs/common/exceptions";
+
+import * as bcrypt from "bcryptjs";
+import { SignOptions, verify, sign } from "jsonwebtoken";
+
+import { secretConfig } from "src/config/env.config";
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
+
+import { TokenPayload } from "../auth/auth-types";
 
 @Injectable()
 export class AuthUtils {

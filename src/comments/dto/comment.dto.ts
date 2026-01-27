@@ -1,25 +1,27 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
+
 import {
   IsBoolean,
   IsNotEmpty,
   IsOptional,
   MaxLength,
   MinLength,
-} from 'class-validator';
-import { IsSafeText } from 'src/modules/decorators/safe-text.decorator';
-import { TrimString } from 'src/modules/decorators/trim-string.decorator';
+} from "class-validator";
+
+import { IsSafeText } from "src/modules/decorators/safe-text.decorator";
+import { TrimString } from "src/modules/decorators/trim-string.decorator";
 
 export class CreateCommentDto {
   @IsNotEmpty()
   @ApiProperty({
-    example: 'Here is a comment',
-    description: 'Write content of your comment',
+    example: "Here is a comment",
+    description: "Write content of your comment",
   })
   @MinLength(1, {
-    message: 'content length must be greatet than $constraint1 characters.',
+    message: "content length must be greatet than $constraint1 characters.",
   })
   @MaxLength(100, {
-    message: 'comment can only be $constraint1 characters long.',
+    message: "comment can only be $constraint1 characters long.",
   })
   @TrimString()
   @IsSafeText()
@@ -29,15 +31,15 @@ export class CreateCommentDto {
 export class UpdateCommentDto {
   @IsOptional()
   @ApiProperty({
-    example: 'Here is the new Comment!',
-    description: 'content of you blogpost',
+    example: "Here is the new Comment!",
+    description: "content of you blogpost",
   })
   @TrimString()
   @MinLength(1, {
-    message: 'content length must be greatet than $constraint1 characters.',
+    message: "content length must be greatet than $constraint1 characters.",
   })
   @MaxLength(100, {
-    message: 'comment can only be $constraint1 characters long.',
+    message: "comment can only be $constraint1 characters long.",
   })
   @IsSafeText()
   content: string;
@@ -45,7 +47,7 @@ export class UpdateCommentDto {
   @IsOptional()
   @ApiProperty({
     example: true,
-    description: 'specify wherether comment is approved or not',
+    description: "specify whether comment is approved or not",
   })
   @IsBoolean()
   isApproved?: boolean;

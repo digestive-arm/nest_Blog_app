@@ -3,37 +3,40 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
-import { DataSource, EntityManager, Repository } from 'typeorm';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import { generateSlug } from 'src/utils/blogpost.utils';
-import { SORT_ORDER, SORTBY } from 'src/common/enums';
-import {
-  paginationInput,
-  paginationMeta,
-} from 'src/common/interfaces/pagination.interfaces';
-import { BLOG_POST_CONSTANTS } from './blogpost.constants';
-import { BLOG_POST_STATUS } from './blogpost-types';
-import { AttachmentEntity } from 'src/modules/database/entities/attachment.entity';
-import { UploadsService } from 'src/uploads/uploads.service';
-import { UploadResult } from 'src/uploads/upload.interface';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { DataSource, EntityManager, Repository } from "typeorm";
+
+import { TokenPayload } from "src/auth/auth-types";
+import { COMMENT_STATUS } from "src/comments/comments-types";
+import { SORT_ORDER, SORTBY } from "src/common/enums";
 import {
   getOffset,
   getPageinationMeta,
-} from 'src/common/helper/pagination.helper';
+} from "src/common/helper/pagination.helper";
+import {
+  paginationInput,
+  paginationMeta,
+} from "src/common/interfaces/pagination.interfaces";
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
+import { AttachmentEntity } from "src/modules/database/entities/attachment.entity";
+import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
+import { CategoryEntity } from "src/modules/database/entities/category.entity";
+import { CommentEntity } from "src/modules/database/entities/comment.entity";
+import { UploadResult } from "src/uploads/upload.interface";
+import { UploadsService } from "src/uploads/uploads.service";
+import { USER_ROLES } from "src/user/user-types";
+import { generateSlug } from "src/utils/blogpost.utils";
+import { findExistingEntity } from "src/utils/db.utils";
+
+import { BLOG_POST_STATUS } from "./blogpost-types";
+import { BLOG_POST_CONSTANTS } from "./blogpost.constants";
 import {
   CreateBlogPostInput,
   GetCommentsOnPostInput,
   UpdateBlogPostInput,
-} from './interfaces/blogpost.interface';
-import { COMMENT_STATUS } from 'src/comments/comments-types';
-import { CommentEntity } from 'src/modules/database/entities/comment.entity';
-import { findExistingEntity } from 'src/utils/db.utils';
-import { CategoryEntity } from 'src/modules/database/entities/category.entity';
-import { TokenPayload } from 'src/auth/auth-types';
-import { USER_ROLES } from 'src/user/user-types';
+} from "./interfaces/blogpost.interface";
 
 @Injectable()
 export class BlogpostService {
@@ -97,15 +100,15 @@ export class BlogpostService {
     q?: string,
   ): Promise<paginationMeta> {
     const qb = this.blogPostRepository
-      .createQueryBuilder('post')
-      .leftJoin('post.attachments', 'attachment')
+      .createQueryBuilder("post")
+      .leftJoin("post.attachments", "attachment")
       .select(BLOG_POST_CONSTANTS.GET_ALL_BLOG_POST_SELECT);
     if (q) {
       qb.where(BLOG_POST_CONSTANTS.SEARCH_QUERY, {
         q: `%${q}%`,
       });
     }
-    qb.andWhere('post.status = :status', {
+    qb.andWhere("post.status = :status", {
       status: BLOG_POST_STATUS.PUBLISHED,
     }).orderBy(`post.${SORTBY.CREATED_AT}`, SORT_ORDER.DESC);
 
@@ -121,10 +124,10 @@ export class BlogpostService {
 
   async findOne(slug: string) {
     const result = await this.blogPostRepository
-      .createQueryBuilder('post')
-      .leftJoin('post.attachments', 'attachment')
+      .createQueryBuilder("post")
+      .leftJoin("post.attachments", "attachment")
       .select(BLOG_POST_CONSTANTS.GET_ALL_BLOG_POST_SELECT)
-      .where('post.slug = :slug', {
+      .where("post.slug = :slug", {
         slug,
       })
       .getOne();
@@ -142,8 +145,8 @@ export class BlogpostService {
     updateBlogPostInput: UpdateBlogPostInput,
   ) {
     const blogPost = await this.blogPostRepository
-      .createQueryBuilder('post')
-      .where('post.id = :id', {
+      .createQueryBuilder("post")
+      .where("post.id = :id", {
         id,
       })
       .getOne();
@@ -234,19 +237,19 @@ export class BlogpostService {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
     const qb = this.commentRepository
-      .createQueryBuilder('comment')
-      .leftJoinAndSelect('comment.user', 'author')
+      .createQueryBuilder("comment")
+      .leftJoinAndSelect("comment.user", "author")
       .select(BLOG_POST_CONSTANTS.GET_COMMENTS_ON_POST_SELECT)
-      .where('comment.postId = :id', {
+      .where("comment.postId = :id", {
         id,
       });
 
     if (isPending) {
-      qb.andWhere('comment.status = :status', {
+      qb.andWhere("comment.status = :status", {
         status: COMMENT_STATUS.PENDING,
       });
     } else {
-      qb.andWhere('comment.status IN (:...statuses)', {
+      qb.andWhere("comment.status IN (:...statuses)", {
         statuses: [COMMENT_STATUS.APPROVED, COMMENT_STATUS.PENDING],
       });
     }
@@ -305,11 +308,11 @@ export class BlogpostService {
     );
 
     const expiredPosts = await this.blogPostRepository
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.attachments', 'image')
-      .select(['post.id', 'image.id', 'image.publicId'])
+      .createQueryBuilder("post")
+      .leftJoinAndSelect("post.attachments", "image")
+      .select(["post.id", "image.id", "image.publicId"])
       .withDeleted()
-      .where('post.deletedAt < :cutOffDate', {
+      .where("post.deletedAt < :cutOffDate", {
         cutOffDate,
       })
       .getMany();

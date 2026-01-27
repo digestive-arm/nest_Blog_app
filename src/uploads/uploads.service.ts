@@ -1,13 +1,16 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from "@nestjs/common";
+
 import {
   v2 as cloudinary,
   UploadApiErrorResponse,
   UploadApiResponse,
-} from 'cloudinary';
-import { UPLOAD_CONSTANTS } from 'src/constants/upload.constants';
-import * as streamifier from 'streamifier';
-import { UploadResult } from './upload.interface';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
+} from "cloudinary";
+import * as streamifier from "streamifier";
+
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
+import { UPLOAD_CONSTANTS } from "src/constants/upload.constants";
+
+import { UploadResult } from "./upload.interface";
 
 @Injectable()
 export class UploadsService {

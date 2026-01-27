@@ -1,4 +1,3 @@
-import { USER_ROLES } from 'src/user/user-types';
 import {
   BadRequestException,
   Body,
@@ -9,29 +8,36 @@ import {
   Post,
   Res,
   UseGuards,
-} from '@nestjs/common';
-import { RoleManagementService } from './role-management.service';
-import type { Response } from 'express';
-import { UpdateRoleDto } from './dto/role-management.dto';
-import { processRoleApprovalRequestDto } from './dto/role-management.dto';
-import responseUtils from 'src/utils/response.utils';
-import { StatusCodes } from 'http-status-codes';
-import { AuthGuard } from 'src/modules/guards/auth.guard';
-import { ApiSwaggerResponse } from 'src/modules/swagger/swagger.decorator';
-import {
-  MyRequestsResponse,
-  PendingRequestsResponse,
-} from './role-management.response';
-import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
+} from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
+
+import { StatusCodes } from "http-status-codes";
+
+import { type TokenPayload } from "src/auth/auth-types";
 import {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
-} from 'src/constants/messages.constants';
-import { ROLE_MANAGEMENT_ROUTES } from 'src/constants/routes';
-import { RolesGuard } from 'src/modules/guards/role.guard';
-import { ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from 'src/modules/decorators/get-current-user.decorator';
-import { type TokenPayload } from 'src/auth/auth-types';
+} from "src/constants/messages.constants";
+import { ROLE_MANAGEMENT_ROUTES } from "src/constants/routes";
+import { CurrentUser } from "src/modules/decorators/get-current-user.decorator";
+import { AuthGuard } from "src/modules/guards/auth.guard";
+import { RolesGuard } from "src/modules/guards/role.guard";
+import { MessageResponse } from "src/modules/swagger/dtos/response.dtos";
+import { ApiSwaggerResponse } from "src/modules/swagger/swagger.decorator";
+import { USER_ROLES } from "src/user/user-types";
+import responseUtils from "src/utils/response.utils";
+
+import {
+  UpdateRoleDto,
+  processRoleApprovalRequestDto,
+} from "./dto/role-management.dto";
+import {
+  MyRequestsResponse,
+  PendingRequestsResponse,
+} from "./role-management.response";
+import { RoleManagementService } from "./role-management.service";
+
+import type { Response } from "express";
 
 @ApiTags(ROLE_MANAGEMENT_ROUTES.ROLE)
 @Controller(ROLE_MANAGEMENT_ROUTES.ROLE)
@@ -39,7 +45,7 @@ import { type TokenPayload } from 'src/auth/auth-types';
 export class RoleManagementController {
   constructor(private readonly roleManagementService: RoleManagementService) {}
 
-  //get my requests
+  // get my requests
   @ApiSwaggerResponse(MyRequestsResponse)
   @Get(ROLE_MANAGEMENT_ROUTES.MY_REQUESTS)
   async getMyRequests(@Res() res: Response, @CurrentUser() user: TokenPayload) {
@@ -55,10 +61,10 @@ export class RoleManagementController {
     }
   }
 
-  //request upgrade
+  // request upgrade
   @ApiSwaggerResponse(MessageResponse, { status: StatusCodes.CREATED })
   @Post(ROLE_MANAGEMENT_ROUTES.UPGRADE_ROLE)
-  async requestUpdgrade(
+  async requestUpgrade(
     @Res() res: Response,
     @Body() updateRoleDto: UpdateRoleDto,
     @CurrentUser() user: TokenPayload,
@@ -68,10 +74,7 @@ export class RoleManagementController {
     }
 
     try {
-      await this.roleManagementService.requestUpdgrade(
-        updateRoleDto.role,
-        user,
-      );
+      await this.roleManagementService.requestUpgrade(updateRoleDto.role, user);
 
       return responseUtils.success(res, {
         data: { message: SUCCESS_MESSAGES.CREATED },
@@ -82,7 +85,7 @@ export class RoleManagementController {
       return responseUtils.error({ res, error });
     }
   }
-  //get pending reqests
+  // get pending requests
   @ApiSwaggerResponse(PendingRequestsResponse, {})
   @Get(ROLE_MANAGEMENT_ROUTES.PENDING_REQUESTS)
   @UseGuards(RolesGuard(USER_ROLES.ADMIN))
@@ -97,14 +100,14 @@ export class RoleManagementController {
       return responseUtils.error({ res, error });
     }
   }
-  //approve / reject request
+  // approve / reject request
   @ApiSwaggerResponse(MessageResponse)
   @Patch(ROLE_MANAGEMENT_ROUTES.PROCESS_REQUEST)
   @UseGuards(RolesGuard(USER_ROLES.ADMIN))
   async processRequest(
     @Res() res: Response,
     @Body() { isApproved }: processRoleApprovalRequestDto,
-    @Param('id') roleApprovalRequestId: string,
+    @Param("id") roleApprovalRequestId: string,
   ) {
     try {
       await this.roleManagementService.processRequest(

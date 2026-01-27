@@ -2,20 +2,25 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { Not, Repository } from "typeorm";
+
+import {
+  getPageinationMeta,
+  getOffset,
+} from "src/common/helper/pagination.helper";
+import { paginationInput } from "src/common/interfaces/pagination.interfaces";
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
+import { CategoryEntity } from "src/modules/database/entities/category.entity";
+import { generateSlug } from "src/utils/blogpost.utils";
+
+import { CATEGORY_CONSTANTS } from "./category.constants";
 import {
   CreateCategoryInput,
   UpdateCategoryInput,
-} from './interfaces/category.interface';
-import { InjectRepository } from '@nestjs/typeorm';
-import { CategoryEntity } from 'src/modules/database/entities/category.entity';
-import { Not, Repository } from 'typeorm';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import { generateSlug } from 'src/utils/blogpost.utils';
-import { paginationInput } from 'src/common/interfaces/pagination.interfaces';
-import { getPageinationMeta } from 'src/common/helper/pagination.helper';
-import { getOffset } from '../common/helper/pagination.helper';
-import { CATEGORY_CONSTANTS } from './category.constants';
+} from "./interfaces/category.interface";
 
 @Injectable()
 export class CategoryService {
@@ -45,9 +50,9 @@ export class CategoryService {
   }
 
   async findAll({ page, limit, isPagination }: paginationInput) {
-    const qb = this.categoryRepository.createQueryBuilder('category');
+    const qb = this.categoryRepository.createQueryBuilder("category");
     qb.select(CATEGORY_CONSTANTS.GET_ALL_CATEGORY_SELECT).where(
-      'category.isActive = :isActive',
+      "category.isActive = :isActive",
       {
         isActive: true,
       },
@@ -63,9 +68,9 @@ export class CategoryService {
   }
 
   async findOne(id: string) {
-    const qb = this.categoryRepository.createQueryBuilder('category');
+    const qb = this.categoryRepository.createQueryBuilder("category");
     qb.select(CATEGORY_CONSTANTS.CATEGORY_SELECT).where(
-      'category.id = :id AND category.isActive = :isActive',
+      "category.id = :id AND category.isActive = :isActive",
       {
         id,
         isActive: true,

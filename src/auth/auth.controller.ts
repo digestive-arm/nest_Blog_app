@@ -7,28 +7,32 @@ import {
   UnauthorizedException,
   Get,
   UseGuards,
-} from '@nestjs/common';
-import { AuthService } from './auth.service';
-import type { Response, Request } from 'express';
-import { CreateUserDto, LoginUserDto } from 'src/auth/dto/auth.dto';
-import responseUtils from 'src/utils/response.utils';
-import { StatusCodes } from 'http-status-codes';
-import { ApiTags, ApiBody } from '@nestjs/swagger';
+} from "@nestjs/common";
+import { ApiTags, ApiBody } from "@nestjs/swagger";
+
+import { StatusCodes } from "http-status-codes";
+
+import { CreateUserDto, LoginUserDto } from "src/auth/dto/auth.dto";
 import {
   refreshTokenCookieConfig,
   accessTokenCookieConfig,
-} from 'src/config/cookie.config';
-import { ApiSwaggerResponse } from 'src/modules/swagger/swagger.decorator';
-import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
+} from "src/config/cookie.config";
 import {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
-} from 'src/constants/messages.constants';
-import { AUTH_ROUTES } from 'src/constants/routes';
-import { CurrentUser } from 'src/modules/decorators/get-current-user.decorator';
-import { AuthGuard } from 'src/modules/guards/auth.guard';
-import { type TokenPayload } from './auth-types';
-import { CurrentUserResponse } from './auth.response';
+} from "src/constants/messages.constants";
+import { AUTH_ROUTES } from "src/constants/routes";
+import { CurrentUser } from "src/modules/decorators/get-current-user.decorator";
+import { AuthGuard } from "src/modules/guards/auth.guard";
+import { MessageResponse } from "src/modules/swagger/dtos/response.dtos";
+import { ApiSwaggerResponse } from "src/modules/swagger/swagger.decorator";
+import responseUtils from "src/utils/response.utils";
+
+import { type TokenPayload } from "./auth-types";
+import { CurrentUserResponse } from "./auth.response";
+import { AuthService } from "./auth.service";
+
+import type { Response, Request } from "express";
 
 @ApiTags(AUTH_ROUTES.AUTH)
 @Controller(AUTH_ROUTES.AUTH)
@@ -72,8 +76,8 @@ export class AuthController {
         password,
       });
 
-      res.cookie('refreshToken', refreshToken, refreshTokenCookieConfig);
-      res.cookie('accessToken', accessToken, accessTokenCookieConfig);
+      res.cookie("refreshToken", refreshToken, refreshTokenCookieConfig);
+      res.cookie("accessToken", accessToken, accessTokenCookieConfig);
 
       return responseUtils.success(res, {
         data: { message: SUCCESS_MESSAGES.LOGGED_IN },
@@ -87,18 +91,18 @@ export class AuthController {
   @ApiSwaggerResponse(MessageResponse)
   @Post(AUTH_ROUTES.REFRESH)
   async refresh(@Res() res: Response, @Req() req: Request) {
-    const oldRefrshToken: unknown = req.cookies['refreshToken'];
+    const oldRefreshToken: unknown = req.cookies["refreshToken"];
 
-    if (typeof oldRefrshToken !== 'string') {
+    if (typeof oldRefreshToken !== "string") {
       throw new UnauthorizedException(ERROR_MESSAGES.INVALID_REFRESHTOKEN);
     }
 
     try {
       const { accessToken, refreshToken } =
-        await this.authService.refresh(oldRefrshToken);
+        await this.authService.refresh(oldRefreshToken);
 
-      res.cookie('refreshToken', refreshToken, refreshTokenCookieConfig);
-      res.cookie('accessToken', accessToken, accessTokenCookieConfig);
+      res.cookie("refreshToken", refreshToken, refreshTokenCookieConfig);
+      res.cookie("accessToken", accessToken, accessTokenCookieConfig);
 
       return responseUtils.success(res, {
         data: { message: SUCCESS_MESSAGES.SUCCESS },
@@ -112,8 +116,8 @@ export class AuthController {
   @ApiSwaggerResponse(MessageResponse, { status: StatusCodes.NO_CONTENT })
   @Post(AUTH_ROUTES.LOGOUT)
   logout(@Res() res: Response) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
 
     return responseUtils.success(res, {
       data: { message: SUCCESS_MESSAGES.SUCCESS },

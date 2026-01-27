@@ -1,6 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+
+import { Transform } from "class-transformer";
+import { IsBoolean, IsInt, IsOptional, Min } from "class-validator";
 
 export class PaginationDto {
   @ApiPropertyOptional({ example: 1, type: Number })
@@ -19,7 +20,7 @@ export class PaginationDto {
 
   @ApiPropertyOptional({ example: true, type: Boolean })
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => value === "true")
   @IsBoolean()
   isPagination = true;
 }

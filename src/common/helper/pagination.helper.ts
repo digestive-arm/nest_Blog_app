@@ -1,7 +1,7 @@
-import {
+import type {
   paginationMeta,
   paginationParams,
-} from '../interfaces/pagination.interfaces';
+} from "../interfaces/pagination.interfaces";
 
 export function getPageinationMeta(
   paginationParams: paginationParams,

@@ -1,30 +1,32 @@
-import { Exclude, Expose, Type } from 'class-transformer';
-import { USER_ROLES } from './user-types';
-import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
-import { PaginationMetaResponse } from 'src/common/responses/pagination.response';
-import { RoleApproval } from 'src/modules/database/entities/role-management.entity';
-import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
-import { CommentEntity } from 'src/modules/database/entities/comment.entity';
+import { Exclude, Expose, Type } from "class-transformer";
+
+import { PaginationMetaResponse } from "src/common/responses/pagination.response";
+import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
+import { CommentEntity } from "src/modules/database/entities/comment.entity";
+import { RoleApproval } from "src/modules/database/entities/role-management.entity";
+import { ApiPropertyWritable } from "src/modules/swagger/swagger.writable.decorator";
+
+import { USER_ROLES } from "./user-types";
 
 export class UserResponse {
   @Expose()
-  @ApiPropertyWritable({ example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiPropertyWritable({ example: "550e8400-e29b-41d4-a716-446655440000" })
   id: string;
 
   @Expose()
-  @ApiPropertyWritable({ example: 'johndoe' })
+  @ApiPropertyWritable({ example: "johndoe" })
   userName: string;
 
   @Expose()
-  @ApiPropertyWritable({ example: 'John' })
+  @ApiPropertyWritable({ example: "John" })
   firstName: string;
 
   @Expose()
-  @ApiPropertyWritable({ example: 'Doe' })
+  @ApiPropertyWritable({ example: "Doe" })
   lastName: string;
 
   @Expose()
-  @ApiPropertyWritable({ example: 'john@example.com' })
+  @ApiPropertyWritable({ example: "john@example.com" })
   email: string;
 
   @Expose()

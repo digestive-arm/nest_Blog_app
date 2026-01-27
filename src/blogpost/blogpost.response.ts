@@ -1,20 +1,24 @@
-import { Exclude, Expose, Type } from 'class-transformer';
-import { PaginationMetaResponse } from 'src/common/responses/pagination.response';
-import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
-import { BLOG_POST_STATUS } from './blogpost-types';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
-import { COMMENT_STATUS } from 'src/comments/comments-types';
+import { ApiPropertyOptional } from "@nestjs/swagger";
+
+import { Exclude, Expose, Type } from "class-transformer";
+
+import { COMMENT_STATUS } from "src/comments/comments-types";
+import { PaginationMetaResponse } from "src/common/responses/pagination.response";
+import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
+import { ApiPropertyWritable } from "src/modules/swagger/swagger.writable.decorator";
+
+import { BLOG_POST_STATUS } from "./blogpost-types";
+
 class UserDataInCommentResponse {
   @Expose()
   @ApiPropertyWritable({
-    example: '6015-eed0-4b5Fc-b399-e91b695f',
+    example: "6015-eed0-4b5Fc-b399-e91b695f",
   })
   id: string;
 
   @Expose()
   @ApiPropertyWritable({
-    example: 'digestive_arm',
+    example: "digestive_arm",
   })
   userName: string;
 }
@@ -22,43 +26,43 @@ class UserDataInCommentResponse {
 class AttachmentResponseForBlogPost {
   @Expose()
   @ApiPropertyWritable({
-    example: 'url_of_your image',
+    example: "url_of_your image",
   })
   url: string;
 
   @Exclude()
   @ApiPropertyWritable({
-    example: 'url_of_your image',
+    example: "url_of_your image",
   })
   publicId: string;
 
   @Exclude()
   @ApiPropertyWritable({
-    example: 'url_of_your image',
+    example: "url_of_your image",
   })
   postId: string;
 
   @Exclude()
   @ApiPropertyWritable({
-    example: 'url_of_your image',
+    example: "url_of_your image",
   })
   blogPost: BlogpostEntity;
 
   @Exclude()
   @ApiPropertyWritable({
-    example: 'af4b-b072d134a386',
+    example: "af4b-b072d134a386",
   })
   id: string;
 
   @Exclude()
   @ApiPropertyWritable({
-    example: 'blog-post-123456',
+    example: "blog-post-123456",
   })
   createdAt: Date;
 
   @Exclude()
   @ApiPropertyWritable({
-    example: 'blog-post-123456',
+    example: "blog-post-123456",
   })
   updatedAt: Date;
 }
@@ -66,43 +70,43 @@ class AttachmentResponseForBlogPost {
 export class BlogPostResponse {
   @Expose()
   @ApiPropertyWritable({
-    example: 'af4b-b072d134a386',
+    example: "af4b-b072d134a386",
   })
   id: string;
 
   @Expose()
   @ApiPropertyWritable({
-    example: ' blogpost',
+    example: " blogpost",
   })
   title: string;
 
   @Expose()
   @ApiPropertyWritable({
-    example: 'content of your blogpost',
+    example: "content of your blogpost",
   })
   content: string;
 
   @Expose()
   @ApiPropertyWritable({
-    example: 'Summary of your blogpost',
+    example: "Summary of your blogpost",
   })
   summary?: string;
 
   @Expose()
   @ApiPropertyWritable({
-    example: 'af4b-b072d134a386',
+    example: "af4b-b072d134a386",
   })
   authorId: string;
 
   @Expose()
   @ApiPropertyWritable({
-    example: 'af4b-b072d134a386',
+    example: "af4b-b072d134a386",
   })
   categoryId: string;
 
   @Expose()
   @ApiPropertyWritable({
-    example: 'blog-post-123456',
+    example: "blog-post-123456",
   })
   slug: string;
 
@@ -115,13 +119,13 @@ export class BlogPostResponse {
 
   @Expose()
   @ApiPropertyWritable({
-    example: 'blog-post-123456',
+    example: "blog-post-123456",
   })
   createdAt: Date;
 
   @Exclude()
   @ApiPropertyWritable({
-    example: 'blog-post-123456',
+    example: "blog-post-123456",
   })
   updatedAt: Date;
 
@@ -146,18 +150,18 @@ export class GetAllBlogPostResponse {
 export class CommentsOnPostResponse {
   @Expose()
   @ApiPropertyWritable({
-    example: '6015-eed0-4b5Fc-b399-e91b695f',
+    example: "6015-eed0-4b5Fc-b399-e91b695f",
   })
   id: string;
 
   @Expose()
   @ApiPropertyWritable({
-    example: 'Here is the comment',
+    example: "Here is the comment",
   })
   content: string;
   @Expose()
   @ApiPropertyWritable({
-    example: 'date',
+    example: "date",
   })
   createdAt: string;
 

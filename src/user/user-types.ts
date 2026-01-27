@@ -1,7 +1,7 @@
 export enum USER_ROLES {
-  ADMIN = 'admin',
-  AUTHOR = 'author',
-  READER = 'reader',
+  ADMIN = "admin",
+  AUTHOR = "author",
+  READER = "reader",
 }
 
 export interface updateUserParams {

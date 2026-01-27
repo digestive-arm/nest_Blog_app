@@ -1,11 +1,13 @@
-import { Entity, Column, OneToMany } from 'typeorm';
-import { BaseEntity } from '../base-entity';
-import { USER_ROLES } from '../../../user/user-types';
-import { RoleApproval } from './role-management.entity';
-import { BlogpostEntity } from './blogpost.entity';
-import { CommentEntity } from './comment.entity';
+import { Entity, Column, OneToMany } from "typeorm";
 
-@Entity('user')
+import { USER_ROLES } from "../../../user/user-types";
+import { BaseEntity } from "../base-entity";
+
+import { BlogpostEntity } from "./blogpost.entity";
+import { CommentEntity } from "./comment.entity";
+import { RoleApproval } from "./role-management.entity";
+
+@Entity("user")
 export class UserEntity extends BaseEntity {
   @Column({ unique: true, nullable: false, select: true })
   userName: string;

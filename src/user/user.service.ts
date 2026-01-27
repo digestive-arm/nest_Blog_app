@@ -1,26 +1,31 @@
+import { copyFile } from "fs";
+
 import {
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { UserEntity } from '../modules/database/entities/user.entity';
-import { Repository } from 'typeorm';
-import { updateUserParams } from './user-types';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import {
-  paginationInput,
-  paginationMeta,
-} from 'src/common/interfaces/pagination.interfaces';
-import { USER_CONSTANTS } from 'src/user/user.constants';
-import { SORT_ORDER, SORTBY } from 'src/common/enums';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { Repository } from "typeorm";
+
+import { SORT_ORDER, SORTBY } from "src/common/enums";
 import {
   getOffset,
   getPageinationMeta,
-} from 'src/common/helper/pagination.helper';
-import { findExistingEntity } from 'src/utils/db.utils';
-import { copyFile } from 'fs';
+} from "src/common/helper/pagination.helper";
+import {
+  paginationInput,
+  paginationMeta,
+} from "src/common/interfaces/pagination.interfaces";
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
+import { USER_CONSTANTS } from "src/user/user.constants";
+import { findExistingEntity } from "src/utils/db.utils";
+
+import { UserEntity } from "../modules/database/entities/user.entity";
+
+import { updateUserParams } from "./user-types";
 
 @Injectable()
 export class UserService {
@@ -35,7 +40,7 @@ export class UserService {
     isPagination,
   }: paginationInput): Promise<paginationMeta> {
     const queryBuilder = this.userRepository
-      .createQueryBuilder('user')
+      .createQueryBuilder("user")
       .select(USER_CONSTANTS.USER_SELECT_FIELDS)
       .orderBy(`user.${SORTBY.CREATED_AT}`, SORT_ORDER.DESC);
 
@@ -51,9 +56,9 @@ export class UserService {
 
   async findOne(id: string): Promise<UserEntity> {
     const user = await this.userRepository
-      .createQueryBuilder('user')
+      .createQueryBuilder("user")
       .select(USER_CONSTANTS.USER_SELECT_FIELDS)
-      .where('user.id = :id', {
+      .where("user.id = :id", {
         id,
       })
       .getOne();
@@ -84,7 +89,7 @@ export class UserService {
       }
     }
     const result = await this.userRepository.preload({
-      id: id,
+      id,
       ...updateUserParams,
     });
 
@@ -97,8 +102,8 @@ export class UserService {
 
   async remove(id: string): Promise<void> {
     const user = await this.userRepository
-      .createQueryBuilder('user')
-      .where('user.id = :id', {
+      .createQueryBuilder("user")
+      .where("user.id = :id", {
         id,
       })
       .getOne();

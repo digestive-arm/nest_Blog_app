@@ -1,4 +1,4 @@
-import { paginationInput } from 'src/common/interfaces/pagination.interfaces';
+import type { paginationInput } from "src/common/interfaces/pagination.interfaces";
 
 export interface CreateBlogPostInput {
   title: string;

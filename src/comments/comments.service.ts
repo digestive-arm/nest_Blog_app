@@ -2,25 +2,28 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { CommentEntity } from 'src/modules/database/entities/comment.entity';
-import { Repository } from 'typeorm';
-import { CreateCommentInput, UpdateCommentInput } from './comment.interface';
-import { paginationInput } from 'src/common/interfaces/pagination.interfaces';
-import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
-import { findExistingEntity } from 'src/utils/db.utils';
-import { UserEntity } from 'src/modules/database/entities/user.entity';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import { BLOG_POST_STATUS } from 'src/blogpost/blogpost-types';
-import { COMMENT_STATUS } from './comments-types';
-import { COMMENT_CONSTANTS } from './comments.constants';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { Repository } from "typeorm";
+
+import { TokenPayload } from "src/auth/auth-types";
+import { BLOG_POST_STATUS } from "src/blogpost/blogpost-types";
 import {
   getOffset,
   getPageinationMeta,
-} from 'src/common/helper/pagination.helper';
-import { TokenPayload } from 'src/auth/auth-types';
-import { USER_ROLES } from 'src/user/user-types';
+} from "src/common/helper/pagination.helper";
+import { paginationInput } from "src/common/interfaces/pagination.interfaces";
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
+import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
+import { CommentEntity } from "src/modules/database/entities/comment.entity";
+import { UserEntity } from "src/modules/database/entities/user.entity";
+import { USER_ROLES } from "src/user/user-types";
+import { findExistingEntity } from "src/utils/db.utils";
+
+import { CreateCommentInput, UpdateCommentInput } from "./comment.interface";
+import { COMMENT_STATUS } from "./comments-types";
+import { COMMENT_CONSTANTS } from "./comments.constants";
 
 @Injectable()
 export class CommentsService {
@@ -47,7 +50,7 @@ export class CommentsService {
 
   async findAll({ page, limit, isPagination }: paginationInput) {
     const qb = this.commentRepository
-      .createQueryBuilder('comment')
+      .createQueryBuilder("comment")
       .select(COMMENT_CONSTANTS.GET_ALL_COMMENTS_SELECT);
     if (isPagination) {
       const skip = getOffset(page, limit);
@@ -67,9 +70,9 @@ export class CommentsService {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
     const comment = await this.commentRepository
-      .createQueryBuilder('comment')
+      .createQueryBuilder("comment")
       .select(COMMENT_CONSTANTS.GET_ONE_COMMENT_SELECT)
-      .where('comment.id =  :id', { id })
+      .where("comment.id =  :id", { id })
       .getOne();
     return comment;
   }
@@ -80,9 +83,9 @@ export class CommentsService {
     updateCommentInput: UpdateCommentInput,
   ) {
     const comment = await this.commentRepository
-      .createQueryBuilder('comment')
-      .leftJoinAndSelect('comment.blogPost', 'blogpost')
-      .where('comment.id = :id', {
+      .createQueryBuilder("comment")
+      .leftJoinAndSelect("comment.blogPost", "blogpost")
+      .where("comment.id = :id", {
         id: commentId,
       })
       .getOne();
@@ -113,8 +116,8 @@ export class CommentsService {
 
   async remove(id: string, user: TokenPayload) {
     const comment = await this.commentRepository
-      .createQueryBuilder('comment')
-      .where('comment.id = :id', {
+      .createQueryBuilder("comment")
+      .where("comment.id = :id", {
         id,
       })
       .getOne();

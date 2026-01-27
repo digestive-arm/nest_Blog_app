@@ -1,21 +1,23 @@
-import { BaseEntity } from '../base-entity';
-import { UserEntity } from './user.entity';
-import { USER_ROLES } from '../../../user/user-types';
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
+
+import { USER_ROLES } from "../../../user/user-types";
+import { BaseEntity } from "../base-entity";
+
+import { UserEntity } from "./user.entity";
 
 export enum RoleApprovalStatus {
-  APPROVED = 'approved',
-  PENDING = 'pending',
-  REJECTED = 'rejected',
+  APPROVED = "approved",
+  PENDING = "pending",
+  REJECTED = "rejected",
 }
 
-@Entity('role-approvals')
+@Entity("role-approvals")
 export class RoleApproval extends BaseEntity {
   @Column()
   userId: string;
 
-  @ManyToOne('UserEntity', { nullable: true })
-  @JoinColumn({ name: 'userId' })
+  @ManyToOne("UserEntity", { nullable: true })
+  @JoinColumn({ name: "userId" })
   user?: UserEntity;
 
   @Column({

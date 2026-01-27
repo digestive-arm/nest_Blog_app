@@ -1,4 +1,3 @@
-import { CATEGORY_ROUTES } from './../constants/routes';
 import {
   Controller,
   Get,
@@ -10,21 +9,25 @@ import {
   Res,
   Query,
   UseGuards,
-} from '@nestjs/common';
-import { CategoryService } from './category.service';
-import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
-import responseUtils from 'src/utils/response.utils';
-import { type Response } from 'express';
-import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
-import { ApiSwaggerResponse } from 'src/modules/swagger/swagger.decorator';
-import { SUCCESS_MESSAGES } from 'src/constants/messages.constants';
-import { StatusCodes } from 'http-status-codes';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { CategoryResponse, GetAllCategoryResponse } from './category.response';
-import { ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from 'src/modules/guards/auth.guard';
-import { RolesGuard } from 'src/modules/guards/role.guard';
-import { USER_ROLES } from 'src/user/user-types';
+} from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
+
+import { type Response } from "express";
+import { StatusCodes } from "http-status-codes";
+
+import { PaginationDto } from "src/common/dto/pagination.dto";
+import { SUCCESS_MESSAGES } from "src/constants/messages.constants";
+import { AuthGuard } from "src/modules/guards/auth.guard";
+import { RolesGuard } from "src/modules/guards/role.guard";
+import { MessageResponse } from "src/modules/swagger/dtos/response.dtos";
+import { ApiSwaggerResponse } from "src/modules/swagger/swagger.decorator";
+import { USER_ROLES } from "src/user/user-types";
+import responseUtils from "src/utils/response.utils";
+
+import { CATEGORY_ROUTES } from "./../constants/routes";
+import { CategoryResponse, GetAllCategoryResponse } from "./category.response";
+import { CategoryService } from "./category.service";
+import { CreateCategoryDto, UpdateCategoryDto } from "./dto/category.dto";
 
 @ApiTags(CATEGORY_ROUTES.CATEGORY)
 @Controller(CATEGORY_ROUTES.CATEGORY)
@@ -77,7 +80,7 @@ export class CategoryController {
 
   @Get(CATEGORY_ROUTES.GET_ONE)
   @ApiSwaggerResponse(CategoryResponse)
-  async findOne(@Res() res: Response, @Param('id') id: string) {
+  async findOne(@Res() res: Response, @Param("id") id: string) {
     try {
       const result = await this.categoryService.findOne(id);
       return responseUtils.success(res, {
@@ -94,7 +97,7 @@ export class CategoryController {
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   update(
     @Res() res: Response,
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() { name, description, isActive }: UpdateCategoryDto,
   ) {
     try {
@@ -113,7 +116,7 @@ export class CategoryController {
   @Delete(CATEGORY_ROUTES.DELETE)
   @ApiSwaggerResponse(MessageResponse)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
-  async remove(@Res() res: Response, @Param('id') id: string) {
+  async remove(@Res() res: Response, @Param("id") id: string) {
     try {
       await this.categoryService.remove(id);
       return responseUtils.success(res, {

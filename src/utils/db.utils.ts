@@ -1,4 +1,4 @@
-import { FindOptionsWhere, ObjectLiteral, Repository } from 'typeorm';
+import type { FindOptionsWhere, ObjectLiteral, Repository } from "typeorm";
 
 export async function findExistingEntity<T extends ObjectLiteral>(
   repository: Repository<T>,

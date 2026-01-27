@@ -1,12 +1,14 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
-import { BaseEntity } from '../base-entity';
-import { UserEntity } from './user.entity';
-import { BLOG_POST_STATUS } from '../../../blogpost/blogpost-types';
-import { CategoryEntity } from './category.entity';
-import { AttachmentEntity } from './attachment.entity';
-import { CommentEntity } from './comment.entity';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
 
-@Entity('blogpost')
+import { BLOG_POST_STATUS } from "../../../blogpost/blogpost-types";
+import { BaseEntity } from "../base-entity";
+
+import { AttachmentEntity } from "./attachment.entity";
+import { CategoryEntity } from "./category.entity";
+import { CommentEntity } from "./comment.entity";
+import { UserEntity } from "./user.entity";
+
+@Entity("blogpost")
 export class BlogpostEntity extends BaseEntity {
   @Column({
     nullable: false,
@@ -33,16 +35,16 @@ export class BlogpostEntity extends BaseEntity {
   })
   authorId: string;
 
-  @ManyToOne('UserEntity', {
+  @ManyToOne("UserEntity", {
     nullable: true,
   })
   @JoinColumn({
-    name: 'authorId',
+    name: "authorId",
   })
   user?: UserEntity;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: BLOG_POST_STATUS,
     default: BLOG_POST_STATUS.DRAFT,
     nullable: false,
@@ -55,11 +57,11 @@ export class BlogpostEntity extends BaseEntity {
   categoryId?: string;
 
   @ManyToOne(() => CategoryEntity, (category) => category.blogPosts, {
-    onDelete: 'SET NULL',
+    onDelete: "SET NULL",
     nullable: true,
   })
   @JoinColumn({
-    name: 'categoryId',
+    name: "categoryId",
   })
   category?: CategoryEntity;
 
