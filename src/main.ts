@@ -1,4 +1,4 @@
-import { ValidationPipe } from "@nestjs/common";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import {
   SwaggerModule,
@@ -34,4 +34,12 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup("/api", app, documentFactory);
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap().catch(() => process.exit(1));
+void (async () => {
+  try {
+    await bootstrap();
+  } catch (error) {
+    const logger = new Logger("Bootstrap");
+    logger.error("Application failed to start", error);
+    process.exit(1);
+  }
+})();
