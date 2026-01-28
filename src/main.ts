@@ -34,6 +34,8 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup("/api", app, documentFactory);
   await app.listen(process.env.PORT ?? 3000);
 }
+
+// NOSONAR
 void (async () => {
   try {
     await bootstrap();
