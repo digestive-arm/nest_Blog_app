@@ -2,8 +2,10 @@ import { ApiProperty } from "@nestjs/swagger";
 
 import {
   IsEmail,
+  IsLowercase,
   IsNotEmpty,
   IsString,
+  IsStrongPassword,
   MaxLength,
   MinLength,
 } from "class-validator";
@@ -21,11 +23,13 @@ export class LoginUserDto {
   @IsEmail({}, { message: "Please enter a valid email address." })
   @IsNotEmpty()
   @TrimString()
+  @IsLowercase()
   readonly email: string;
 
   @IsString()
-  @MinLength(8, {
-    message: "Password must be at least $constraint1 characters long.",
+  @IsStrongPassword(undefined, {
+    message:
+      "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
   })
   @ApiProperty({
     example: "your_secret_password",
@@ -78,6 +82,7 @@ export class CreateUserDto {
     description: "email of user",
   })
   @IsEmail({}, { message: "Please enter a valid email address." })
+  @IsLowercase()
   @TrimString()
   readonly email: string;
 
@@ -87,8 +92,9 @@ export class CreateUserDto {
     description: "password of user",
   })
   @IsString()
-  @MinLength(8, {
-    message: "Password must be at least $constraint1 characters long.",
+  @IsStrongPassword(undefined, {
+    message:
+      "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
   })
   @TrimString()
   readonly password: string;

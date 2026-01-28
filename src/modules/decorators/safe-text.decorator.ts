@@ -15,7 +15,7 @@ import {
  * - any HTML tags
  * - script-like injections
  */
-const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\s.,!?'"()\-_:;#*_>`~[\]\n\r]+$/;
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\s.,!?'"()\-:;#_>`~[\]]+$/;
 
 export function IsSafeText(validationOptions?: ValidationOptions) {
   return function (object: object, propertyName: string) {
