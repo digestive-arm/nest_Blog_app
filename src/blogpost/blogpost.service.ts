@@ -169,6 +169,12 @@ export class BlogpostService {
 
     if (updateBlogPostInput.title) {
       blogPost.title = updateBlogPostInput.title;
+    }
+
+    if (
+      updateBlogPostInput.title &&
+      blogPost.status === BLOG_POST_STATUS.DRAFT
+    ) {
       blogPost.slug = generateSlug(updateBlogPostInput.title, id);
     }
 
