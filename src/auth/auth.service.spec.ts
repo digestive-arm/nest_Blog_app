@@ -1,3 +1,11 @@
+jest.mock("../../src/utils/auth.utils", () => ({
+  decodeToken: jest.fn(),
+  hashPassword: jest.fn(),
+  validatePassword: jest.fn(),
+  generateAccessToken: jest.fn(),
+  generateRefreshToken: jest.fn(),
+}));
+
 import {
   NotFoundException,
   UnauthorizedException,
@@ -8,7 +16,13 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 
 import { UserEntity } from "src/modules/database/entities/user.entity";
 import { USER_ROLES } from "src/user/user-types";
-import { AuthUtils } from "src/utils/auth.utils";
+
+import {
+  decodeToken,
+  validatePassword,
+  generateAccessToken,
+  generateRefreshToken,
+} from "../../src/utils/auth.utils";
 
 import { AuthService } from "./auth.service";
 
@@ -16,8 +30,12 @@ import type { Repository } from "typeorm";
 
 describe("AuthService - Edge Case Logic", () => {
   let service: AuthService;
-  let userRepository: Repository<UserEntity>;
-  let authUtils = jest.mocked(AuthUtils);
+  let userRepository: jest.Mocked<Repository<UserEntity>>;
+
+  const mockUserRepository: jest.Mocked<Partial<Repository<UserEntity>>> = {
+    createQueryBuilder: jest.fn(),
+    save: jest.fn(),
+  };
 
   const mockUserEntity = {
     id: "uuid-123",
@@ -33,19 +51,6 @@ describe("AuthService - Edge Case Logic", () => {
     getOne: jest.fn(),
   });
 
-  const mockUserRepository = {
-    createQueryBuilder: jest.fn(),
-    save: jest.fn(),
-  };
-
-  const mockAuthUtils = {
-    hashPassword: jest.fn(),
-    validatePassword: jest.fn(),
-    generateAccessToken: jest.fn(),
-    generateRefreshToken: jest.fn(),
-    decodeToken: jest.fn(),
-  };
-
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -56,13 +61,11 @@ describe("AuthService - Edge Case Logic", () => {
           provide: getRepositoryToken(UserEntity),
           useValue: mockUserRepository,
         },
-        { provide: AuthUtils, useValue: mockAuthUtils },
       ],
     }).compile();
 
     service = module.get(AuthService);
     userRepository = module.get(getRepositoryToken(UserEntity));
-    authUtils = module.get(AuthUtils);
   });
 
   describe("refresh()", () => {
@@ -75,7 +78,7 @@ describe("AuthService - Edge Case Logic", () => {
         refreshToken: "token-A",
       });
 
-      authUtils.decodeToken.mockReturnValue({ id: mockUserEntity.id });
+      (decodeToken as jest.Mock).mockReturnValue({ id: mockUserEntity.id });
 
       await expect(service.refresh("token-B")).rejects.toThrow(
         ForbiddenException,
@@ -88,7 +91,7 @@ describe("AuthService - Edge Case Logic", () => {
 
       qb.getOne.mockResolvedValue(mockUserEntity);
 
-      authUtils.decodeToken.mockReturnValue({
+      (decodeToken as jest.Mock).mockReturnValue({
         id: "1",
         role: USER_ROLES.ADMIN,
         iat: 123,
@@ -97,11 +100,11 @@ describe("AuthService - Edge Case Logic", () => {
 
       await service.refresh("valid-token");
 
-      expect(authUtils.generateAccessToken).toHaveBeenCalledWith({
+      expect(generateAccessToken).toHaveBeenCalledWith({
         id: "1",
         role: "admin",
       });
-      expect(authUtils.generateRefreshToken).toHaveBeenCalledWith({
+      expect(generateRefreshToken).toHaveBeenCalledWith({
         id: "1",
         role: "admin",
       });
@@ -112,7 +115,7 @@ describe("AuthService - Edge Case Logic", () => {
       mockUserRepository.createQueryBuilder.mockReturnValue(qb);
 
       qb.getOne.mockResolvedValue(null);
-      authUtils.decodeToken.mockReturnValue({ id: "missing" });
+      (decodeToken as jest.Mock).mockReturnValue({ id: "missing" });
 
       await expect(service.refresh("token")).rejects.toThrow(NotFoundException);
     });
@@ -141,7 +144,7 @@ describe("AuthService - Edge Case Logic", () => {
         password: "hashed",
       });
 
-      authUtils.validatePassword.mockResolvedValue(false);
+      (validatePassword as jest.Mock).mockResolvedValue(false);
 
       await expect(
         service.login({ email: "a@a.com", password: "wrong" }),
@@ -174,7 +177,7 @@ describe("AuthService - Edge Case Logic", () => {
   });
 
   describe("logout()", () => {
-    it("nullifies refresh token and persists user", async function (this: void) {
+    it("nullifies refresh token and persists user", async () => {
       const qb = createQB();
       mockUserRepository.createQueryBuilder.mockReturnValue(qb);
 
@@ -189,7 +192,7 @@ describe("AuthService - Edge Case Logic", () => {
       await service.logout(user.id);
 
       expect(user.refreshToken).toBeNull();
-      expect(userRepository.save).toHaveBeenCalledWith(user);
+      expect(userRepository.save as jest.Mock).toHaveBeenCalledWith(user);
     });
   });
 });

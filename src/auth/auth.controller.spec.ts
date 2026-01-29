@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
+
 import { type Request } from "express";
 
 import { ERROR_MESSAGES } from "src/constants/messages.constants";
@@ -12,7 +13,6 @@ import { USER_ROLES } from "src/user/user-types";
 
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
-import { AuthUtils } from "src/utils/auth.utils";
 
 describe("AuthController - Full Edge Case Suite", () => {
   let controller: AuthController;
@@ -34,21 +34,10 @@ describe("AuthController - Full Edge Case Suite", () => {
     logout: jest.fn(),
   };
 
-  const mockAuthUtils = {
-    validateToken: jest.fn(),
-    extractToken: jest.fn(),
-  };
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [
-        { provide: AuthService, useValue: mockAuthService },
-        {
-          provide: AuthUtils,
-          useValue: mockAuthUtils,
-        },
-      ],
+      providers: [{ provide: AuthService, useValue: mockAuthService }],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
