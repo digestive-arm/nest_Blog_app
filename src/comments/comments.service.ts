@@ -20,7 +20,6 @@ import {
 import { ERROR_MESSAGES } from "src/constants/messages.constants";
 import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
 import { CommentEntity } from "src/modules/database/entities/comment.entity";
-import { UserEntity } from "src/modules/database/entities/user.entity";
 import { USER_ROLES } from "src/user/user-types";
 import { findExistingEntity } from "src/utils/db.utils";
 
@@ -35,8 +34,6 @@ export class CommentsService {
     private readonly commentRepository: Repository<CommentEntity>,
     @InjectRepository(BlogpostEntity)
     private readonly blogpostRepository: Repository<BlogpostEntity>,
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
   ) {}
   async create(createCommentInput: CreateCommentInput): Promise<void> {
     const existingPost = await findExistingEntity(this.blogpostRepository, {
@@ -107,6 +104,7 @@ export class CommentsService {
     }
     if (updateCommentInput.content)
       comment.content = updateCommentInput.content;
+    comment.status = COMMENT_STATUS.PENDING;
 
     if (updateCommentInput.isApproved !== undefined && !isPostOwner) {
       throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);

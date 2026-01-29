@@ -5,7 +5,6 @@ import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
 import { CommentEntity } from "src/modules/database/entities/comment.entity";
 import { UserEntity } from "src/modules/database/entities/user.entity";
 import { AuthGuard } from "src/modules/guards/auth.guard";
-import { AuthUtils } from "src/utils/auth.utils";
 
 import { CommentsController } from "./comments.controller";
 import { CommentsService } from "./comments.service";
@@ -15,7 +14,7 @@ import { CommentsService } from "./comments.service";
     TypeOrmModule.forFeature([CommentEntity, UserEntity, BlogpostEntity]),
   ],
   controllers: [CommentsController],
-  providers: [CommentsService, CommentEntity, AuthGuard, AuthUtils],
+  providers: [CommentsService, CommentEntity, AuthGuard],
   exports: [CommentEntity],
 })
 export class CommentsModule {}

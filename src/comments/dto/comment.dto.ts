@@ -38,7 +38,7 @@ export class UpdateCommentDto {
   @MinLength(1, {
     message: "content length must be greater than $constraint1 characters.",
   })
-  @MaxLength(100, {
+  @MaxLength(1000, {
     message: "comment can only be $constraint1 characters long.",
   })
   @IsSafeText()

@@ -50,7 +50,7 @@ export class CommentsController {
   }
 
   @Patch(COMMENT_ROUTES.UPDATE)
-  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.READER, USER_ROLES.AUTHOR))
   @ApiSwaggerResponse(MessageResponse)
   async update(
     @Res() res: Response,
@@ -73,7 +73,7 @@ export class CommentsController {
 
   @Delete(COMMENT_ROUTES.DELETE)
   @ApiSwaggerResponse(MessageResponse)
-  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.READER, USER_ROLES.AUTHOR))
   async remove(
     @Res() res: Response,
     @CurrentUser() user: TokenPayload,

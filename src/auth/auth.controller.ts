@@ -127,14 +127,23 @@ export class AuthController {
 
   @ApiSwaggerResponse(MessageResponse, { status: StatusCodes.NO_CONTENT })
   @Post(AUTH_ROUTES.LOGOUT)
-  logout(@Res() res: Response): Response<CommonResponseType<MessageResponse>> {
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
+  @UseGuards(AuthGuard)
+  async logout(
+    @Res() res: Response,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<Response<CommonResponseType<MessageResponse>>> {
+    try {
+      res.clearCookie("accessToken");
+      res.clearCookie("refreshToken");
+      await this.authService.logout(user.id);
 
-    return responseUtils.success(res, {
-      data: { message: SUCCESS_MESSAGES.SUCCESS },
-      transformWith: MessageResponse,
-      status: StatusCodes.NO_CONTENT,
-    });
+      return responseUtils.success(res, {
+        data: { message: SUCCESS_MESSAGES.SUCCESS },
+        transformWith: MessageResponse,
+        status: StatusCodes.NO_CONTENT,
+      });
+    } catch (error) {
+      return responseUtils.error({ res, error });
+    }
   }
 }

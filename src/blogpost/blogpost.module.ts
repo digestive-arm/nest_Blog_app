@@ -9,7 +9,6 @@ import { CommentEntity } from "src/modules/database/entities/comment.entity";
 import { UserEntity } from "src/modules/database/entities/user.entity";
 import { AuthGuard } from "src/modules/guards/auth.guard";
 import { UploadsService } from "src/uploads/uploads.service";
-import { AuthUtils } from "src/utils/auth.utils";
 
 import { BlogpostController } from "./blogpost.controller";
 import { BlogpostService } from "./blogpost.service";
@@ -30,7 +29,6 @@ import { BlogpostService } from "./blogpost.service";
     CommentsService,
     BlogpostEntity,
     AuthGuard,
-    AuthUtils,
     CategoryEntity,
     CommentEntity,
     AttachmentEntity,

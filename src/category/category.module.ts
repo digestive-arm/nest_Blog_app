@@ -4,7 +4,6 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { CategoryEntity } from "src/modules/database/entities/category.entity";
 import { UserEntity } from "src/modules/database/entities/user.entity";
 import { AuthGuard } from "src/modules/guards/auth.guard";
-import { AuthUtils } from "src/utils/auth.utils";
 
 import { CategoryController } from "./category.controller";
 import { CategoryService } from "./category.service";
@@ -12,7 +11,7 @@ import { CategoryService } from "./category.service";
 @Module({
   imports: [TypeOrmModule.forFeature([CategoryEntity, UserEntity])],
   controllers: [CategoryController],
-  providers: [CategoryService, CategoryEntity, AuthGuard, AuthUtils],
+  providers: [CategoryService, CategoryEntity, AuthGuard],
   exports: [CategoryService, CategoryEntity],
 })
 export class CategoryModule {}

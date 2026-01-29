@@ -9,6 +9,11 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 
 import { TokenPayload } from "src/auth/auth-types";
+import {
+  getOffset,
+  getPaginationMeta,
+} from "src/common/helper/pagination.helper";
+import { PaginationMeta } from "src/common/interfaces/pagination.interfaces";
 import { ERROR_MESSAGES } from "src/constants/messages.constants";
 import {
   RoleApproval,
@@ -17,6 +22,8 @@ import {
 import { UserEntity } from "src/modules/database/entities/user.entity";
 import { USER_ROLES } from "src/user/user-types";
 import { findExistingEntity } from "src/utils/db.utils";
+
+import { ProcessRequestInput } from "./interfaces/role-management.interface";
 
 @Injectable()
 export class RoleManagementService {
@@ -49,7 +56,7 @@ export class RoleManagementService {
       this.roleApprovalRepository,
       {
         userId: user.id,
-        requestedRole,
+        status: RoleApprovalStatus.PENDING,
       },
     );
 
@@ -84,14 +91,24 @@ export class RoleManagementService {
   }
 
   // get pending requests
-  async getPendingRequest(): Promise<RoleApproval[]> {
-    const result = await this.roleApprovalRepository
+  async getPendingRequest({
+    page,
+    limit,
+    isPagination,
+  }: ProcessRequestInput): Promise<PaginationMeta<RoleApproval>> {
+    const qb = this.roleApprovalRepository
       .createQueryBuilder("role")
       .where("role.status = :status", {
         status: RoleApprovalStatus.PENDING,
-      })
-      .getMany();
+      });
 
+    if (isPagination) {
+      const offset = getOffset(page, limit);
+      qb.skip(offset).take(limit);
+    }
+    const [items, total] = await qb.getManyAndCount();
+
+    const result = getPaginationMeta({ items, total, page, limit });
     return result;
   }
 

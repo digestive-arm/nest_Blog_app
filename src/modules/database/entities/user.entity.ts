@@ -44,8 +44,10 @@ export class UserEntity extends BaseEntity {
 
   @Column({
     nullable: true,
+    default: null,
+    type: "varchar",
   })
-  refreshToken?: string;
+  refreshToken: string | null;
 
   @OneToMany(() => RoleApproval, (approval) => approval.user)
   roleRequest: RoleApproval[];
