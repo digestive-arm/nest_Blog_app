@@ -12,7 +12,13 @@ import { Repository } from "typeorm";
 import { ERROR_MESSAGES } from "src/constants/messages.constants";
 import { UserEntity } from "src/modules/database/entities/user.entity";
 import { USER_CONSTANTS } from "src/user/user.constants";
-import { AuthUtils } from "src/utils/auth.utils";
+import {
+  decodeToken,
+  generateAccessToken,
+  generateRefreshToken,
+  hashPassword,
+  validatePassword,
+} from "src/utils/auth.utils";
 
 import {
   CreateUserParams,
@@ -26,7 +32,6 @@ export class AuthService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
-    private readonly authUtils: AuthUtils,
   ) {}
 
   async login(loginUserParams: LoginUserParams): Promise<AuthResponse> {
@@ -46,10 +51,7 @@ export class AuthService {
 
     const { password: hashed, id, role } = user;
 
-    const validPassword = await this.authUtils.validatePassword(
-      password,
-      hashed,
-    );
+    const validPassword = await validatePassword(password, hashed);
 
     if (!validPassword) {
       throw new UnauthorizedException(ERROR_MESSAGES.INVALID_PASSWORD);
@@ -61,8 +63,8 @@ export class AuthService {
       role,
     };
 
-    const accessToken = this.authUtils.generateAccessToken(tokenPayload);
-    const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
 
     user.refreshToken = refreshToken;
     await this.userRepository.save(user);
@@ -92,7 +94,7 @@ export class AuthService {
       throw new ConflictException(ERROR_MESSAGES.ALREADY_EXISTS_ACCOUNT);
     }
 
-    const hashedPassword = await this.authUtils.hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
     await this.userRepository.save({
       email,
@@ -104,7 +106,7 @@ export class AuthService {
   }
 
   async refresh(receivedRefreshToken: string): Promise<AuthResponse> {
-    const tokenPayload = this.authUtils.decodeToken(receivedRefreshToken);
+    const tokenPayload = decodeToken(receivedRefreshToken);
     const { id } = tokenPayload;
 
     const user = await this.userRepository
@@ -124,8 +126,8 @@ export class AuthService {
     delete tokenPayload["iat"];
     delete tokenPayload["exp"];
 
-    const accessToken = this.authUtils.generateAccessToken(tokenPayload);
-    const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
 
     await this.userRepository.save(user);
 

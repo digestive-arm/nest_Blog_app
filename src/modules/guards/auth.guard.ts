@@ -7,7 +7,7 @@ import {
 } from "@nestjs/common";
 
 import { RequestWithUser } from "src/common/interfaces/request-with-user.interface";
-import { AuthUtils } from "src/utils/auth.utils";
+import { decodeToken } from "src/utils/auth.utils";
 
 interface AuthCookies {
   accessToken: string;
@@ -15,8 +15,6 @@ interface AuthCookies {
 }
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly authUtils: AuthUtils) {}
-
   canActivate(context: ExecutionContext): boolean {
     try {
       const request = context.switchToHttp().getRequest<RequestWithUser>();
@@ -28,7 +26,7 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException("Session expired please login again");
       }
 
-      const decoded = this.authUtils.decodeToken(accessToken);
+      const decoded = decodeToken(accessToken);
 
       delete decoded["iat"];
       delete decoded["exp"];

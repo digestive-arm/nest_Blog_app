@@ -136,7 +136,6 @@ export class AuthController {
       res.clearCookie("accessToken");
       res.clearCookie("refreshToken");
       await this.authService.logout(user.id);
-      await this.authService.logout(user.id);
 
       return responseUtils.success(res, {
         data: { message: SUCCESS_MESSAGES.SUCCESS },
