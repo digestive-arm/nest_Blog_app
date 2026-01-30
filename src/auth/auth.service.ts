@@ -1,40 +1,46 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { UserEntity } from 'src/modules/database/entities/user.entity';
-import { AuthUtils } from 'src/utils/auth.utils';
-import { Repository } from 'typeorm';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { Repository } from "typeorm";
+
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
+import { UserEntity } from "src/modules/database/entities/user.entity";
+import { USER_CONSTANTS } from "src/user/user.constants";
 import {
-  createUserParams,
-  loginUserParams,
+  decodeToken,
+  generateAccessToken,
+  generateRefreshToken,
+  hashPassword,
+  validatePassword,
+} from "src/utils/auth.utils";
+
+import {
+  CreateUserParams,
+  LoginUserParams,
   AuthResponse,
   TokenPayload,
-} from './auth-types';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import {
-  LOGIN_SELECT_FIELDS,
-  REGISTER_SELECT_FIELDS,
-} from 'src/user/user.constants';
+} from "./auth-types";
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
-    private readonly authUtils: AuthUtils,
   ) {}
 
-  async login(loginUserParams: loginUserParams): Promise<AuthResponse> {
+  async login(loginUserParams: LoginUserParams): Promise<AuthResponse> {
     const { email, password } = loginUserParams;
     const user = await this.userRepository
-      .createQueryBuilder('user')
-      .select(LOGIN_SELECT_FIELDS)
-      .addSelect('user.password')
-      .where('user.email = :email', {
+      .createQueryBuilder("user")
+      .select(USER_CONSTANTS.LOGIN_SELECT_FIELDS)
+      .addSelect("user.password")
+      .where("user.email = :email", {
         email,
       })
       .getOne();
@@ -45,10 +51,7 @@ export class AuthService {
 
     const { password: hashed, id, role } = user;
 
-    const validPassword = await this.authUtils.validatePassword(
-      password,
-      hashed,
-    );
+    const validPassword = await validatePassword(password, hashed);
 
     if (!validPassword) {
       throw new UnauthorizedException(ERROR_MESSAGES.INVALID_PASSWORD);
@@ -60,8 +63,8 @@ export class AuthService {
       role,
     };
 
-    const accessToken = this.authUtils.generateAccessToken(tokenPayload);
-    const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
 
     user.refreshToken = refreshToken;
     await this.userRepository.save(user);
@@ -75,14 +78,14 @@ export class AuthService {
     password,
     firstName,
     lastName,
-  }: createUserParams): Promise<void> {
+  }: CreateUserParams): Promise<void> {
     const existingUser = await this.userRepository
-      .createQueryBuilder('user')
-      .select(REGISTER_SELECT_FIELDS)
-      .where('user.email = :email', {
+      .createQueryBuilder("user")
+      .select(USER_CONSTANTS.REGISTER_SELECT_FIELDS)
+      .where("user.email = :email", {
         email,
       })
-      .orWhere('user.userName = :userName', {
+      .orWhere("user.userName = :userName", {
         userName,
       })
       .getOne();
@@ -91,7 +94,7 @@ export class AuthService {
       throw new ConflictException(ERROR_MESSAGES.ALREADY_EXISTS_ACCOUNT);
     }
 
-    const hashedPassword = await this.authUtils.hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
     await this.userRepository.save({
       email,
@@ -103,26 +106,45 @@ export class AuthService {
   }
 
   async refresh(receivedRefreshToken: string): Promise<AuthResponse> {
-    const tokenPayload = this.authUtils.decodeToken(receivedRefreshToken);
+    const tokenPayload = decodeToken(receivedRefreshToken);
     const { id } = tokenPayload;
 
-    delete tokenPayload['iat'];
-    delete tokenPayload['exp'];
-
-    const accessToken = this.authUtils.generateAccessToken(tokenPayload);
-    const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);
-
-    const user = await this.userRepository.preload({
-      id,
-      refreshToken,
-    });
+    const user = await this.userRepository
+      .createQueryBuilder("user")
+      .select("user.refreshToken")
+      .where("user.id = :id ", { id })
+      .getOne();
 
     if (!user) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
+    if (user.refreshToken !== receivedRefreshToken) {
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
+    }
+
+    delete tokenPayload["iat"];
+    delete tokenPayload["exp"];
+
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
+
     await this.userRepository.save(user);
 
     return { accessToken, refreshToken };
+  }
+
+  async logout(userId: string): Promise<void> {
+    const user = await this.userRepository
+      .createQueryBuilder("user")
+      .where("user.id = :id ", { id: userId })
+      .getOne();
+
+    if (!user) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
+    }
+    user.refreshToken = null;
+
+    await this.userRepository.save(user);
   }
 }

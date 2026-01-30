@@ -1,14 +1,17 @@
-import { Module } from '@nestjs/common';
-import { CategoryService } from './category.service';
-import { CategoryController } from './category.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { CategoryEntity } from 'src/modules/database/entities/category.entity';
-import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+
+import { CategoryEntity } from "src/modules/database/entities/category.entity";
+import { UserEntity } from "src/modules/database/entities/user.entity";
+import { AuthGuard } from "src/modules/guards/auth.guard";
+
+import { CategoryController } from "./category.controller";
+import { CategoryService } from "./category.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CategoryEntity, BlogpostEntity])],
+  imports: [TypeOrmModule.forFeature([CategoryEntity, UserEntity])],
   controllers: [CategoryController],
-  providers: [CategoryService, CategoryEntity, BlogpostEntity],
+  providers: [CategoryService, CategoryEntity, AuthGuard],
   exports: [CategoryService, CategoryEntity],
 })
 export class CategoryModule {}

@@ -1,6 +1,6 @@
-import { USER_ROLES } from 'src/user/user-types';
+import type { USER_ROLES } from "src/user/user-types";
 
-export interface createUserParams {
+export interface CreateUserParams {
   email: string;
   password: string;
   firstName: string;
@@ -8,7 +8,7 @@ export interface createUserParams {
   userName: string;
 }
 
-export interface loginUserParams {
+export interface LoginUserParams {
   email: string;
   password: string;
 }

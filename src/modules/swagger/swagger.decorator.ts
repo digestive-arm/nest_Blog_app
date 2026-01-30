@@ -1,5 +1,5 @@
 // Auto-generated Swagger Decorator
-import { applyDecorators, Type } from "@nestjs/common";
+import { type Type, applyDecorators } from "@nestjs/common";
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -15,8 +15,11 @@ import {
   ApiUnauthorizedResponse,
   getSchemaPath,
 } from "@nestjs/swagger";
+
 import { StatusCodes, getReasonPhrase } from "http-status-codes";
+
 import { SUCCESS_MESSAGES } from "src/constants/messages.constants";
+
 import { ExceptionErrorDto } from "./dtos/exception-error.dto";
 import { ResponseDtoTypeEnum, ResponseDto } from "./dtos/response.dtos";
 
@@ -31,7 +34,7 @@ interface ApiSwaggerFileOption {
   mimeTypes: string[];
 }
 
-const getExceptionSchema = (httpStatus: number) => ({
+const getExceptionSchema = (httpStatus: number): object => ({
   allOf: [
     { $ref: getSchemaPath(ExceptionErrorDto) },
     {
@@ -74,8 +77,12 @@ const commonDecorators = [
   }),
 ];
 
-export function ApiSwaggerResponse<TModel extends Type>(model: TModel, options?: ApiSwaggerOption) {
-  const { status = StatusCodes.OK, type = ResponseDtoTypeEnum.Object } = options ?? {};
+export function ApiSwaggerResponse<TModel extends Type>(
+  model: TModel,
+  options?: ApiSwaggerOption,
+) {
+  const { status = StatusCodes.OK, type = ResponseDtoTypeEnum.Object } =
+    options ?? {};
 
   return applyDecorators(
     ApiExtraModels(ResponseDto),
@@ -101,18 +108,27 @@ export function ApiSwaggerResponse<TModel extends Type>(model: TModel, options?:
           },
         ],
       },
-      description: status === StatusCodes.CREATED ? SUCCESS_MESSAGES.CREATED : SUCCESS_MESSAGES.SUCCESS,
+      description:
+        (status as StatusCodes) === StatusCodes.CREATED
+          ? SUCCESS_MESSAGES.CREATED
+          : SUCCESS_MESSAGES.SUCCESS,
     }),
     ...commonDecorators,
   );
 }
 
-export function ApiSwaggerFileResponse({ mimeTypes, status }: ApiSwaggerFileOption) {
+export function ApiSwaggerFileResponse({
+  mimeTypes,
+  status,
+}: ApiSwaggerFileOption) {
   return applyDecorators(
     ApiProduces(...mimeTypes),
     ApiOkResponse({
       schema: { type: "string", format: "binary" },
-      description: status === StatusCodes.CREATED ? SUCCESS_MESSAGES.CREATED : SUCCESS_MESSAGES.SUCCESS,
+      description:
+        status === StatusCodes.CREATED
+          ? SUCCESS_MESSAGES.CREATED
+          : SUCCESS_MESSAGES.SUCCESS,
     }),
     ...commonDecorators,
   );

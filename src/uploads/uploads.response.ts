@@ -1,15 +1,16 @@
-import { Expose, Type } from 'class-transformer';
-import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
+import { Expose, Type } from "class-transformer";
+
+import { ApiPropertyWritable } from "src/modules/swagger/swagger.writable.decorator";
 
 export class UploadResponse {
   @Expose()
   @ApiPropertyWritable({
-    example: 'uploads/nsrgnsepsdfnadvnfdnv',
+    example: "uploads/public_id",
   })
   public_id: string;
   @Expose()
   @ApiPropertyWritable({
-    example: 'secure url of your image',
+    example: "secure url of your image",
   })
   secure_url: string;
 }

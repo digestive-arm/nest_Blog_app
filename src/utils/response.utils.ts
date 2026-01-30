@@ -1,15 +1,18 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
-import { plainToInstance, type ClassConstructor } from 'class-transformer';
-import { StatusCodes } from 'http-status-codes';
-import type { Response } from 'express';
+import { HttpException, HttpStatus } from "@nestjs/common";
+
+import { plainToInstance, type ClassConstructor } from "class-transformer";
+import { StatusCodes } from "http-status-codes";
+
+import type { Response } from "express";
+
 export interface CommonResponseType<T> {
   data: T | T[];
   status?: number;
-  transformWith?: ClassConstructor<T>;
+  transformWith?: ClassConstructor<unknown>;
 }
 interface ErrorResponseType {
   res: Response;
-  error: AnyType | Error | HttpException;
+  error: Error | HttpException;
   additionalErrors?: Array<{ row: number; errorMessages: string[] }>;
   statusCode?: StatusCodes;
 }
@@ -31,7 +34,7 @@ class ResponseUtils {
     if (transformWith) {
       responseData = plainToInstance(transformWith, data, {
         excludeExtraneousValues: true,
-      });
+      }) as T;
     }
     return resp.status(status).send({ data: responseData, status });
   }

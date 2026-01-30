@@ -2,26 +2,30 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { CommentEntity } from 'src/modules/database/entities/comment.entity';
-import { Repository } from 'typeorm';
-import { CreateCommentInput, UpdateCommentInput } from './comment.interface';
-import { paginationInput } from 'src/common/interfaces/pagination.interfaces';
-import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
-import { findExistingEntity } from 'src/utils/db.utils';
-import { UserEntity } from 'src/modules/database/entities/user.entity';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import { BLOG_POST_STATUS } from 'src/blogpost/blogpost-types';
-import { COMMENT_STATUS } from './comments-types';
-import {
-  GET_ALL_COMMENTS_SELECT,
-  GET_ONE_COMMENT_SELECT,
-} from './comments.constants';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { Repository } from "typeorm";
+
+import { TokenPayload } from "src/auth/auth-types";
+import { BLOG_POST_STATUS } from "src/blogpost/blogpost-types";
 import {
   getOffset,
-  getPageinationMeta,
-} from 'src/common/helper/pagination.helper';
+  getPaginationMeta,
+} from "src/common/helper/pagination.helper";
+import {
+  PaginationInput,
+  PaginationMeta,
+} from "src/common/interfaces/pagination.interfaces";
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
+import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
+import { CommentEntity } from "src/modules/database/entities/comment.entity";
+import { USER_ROLES } from "src/user/user-types";
+import { findExistingEntity } from "src/utils/db.utils";
+
+import { CreateCommentInput, UpdateCommentInput } from "./comment.interface";
+import { COMMENT_STATUS } from "./comments-types";
+import { COMMENT_CONSTANTS } from "./comments.constants";
 
 @Injectable()
 export class CommentsService {
@@ -30,10 +34,8 @@ export class CommentsService {
     private readonly commentRepository: Repository<CommentEntity>,
     @InjectRepository(BlogpostEntity)
     private readonly blogpostRepository: Repository<BlogpostEntity>,
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
   ) {}
-  async create(createCommentInput: CreateCommentInput) {
+  async create(createCommentInput: CreateCommentInput): Promise<void> {
     const existingPost = await findExistingEntity(this.blogpostRepository, {
       id: createCommentInput.postId,
       status: BLOG_POST_STATUS.PUBLISHED,
@@ -46,21 +48,25 @@ export class CommentsService {
     await this.commentRepository.save(comment);
   }
 
-  async findAll({ page, limit, isPagination }: paginationInput) {
+  async findAll({
+    page,
+    limit,
+    isPagination,
+  }: PaginationInput): Promise<PaginationMeta<CommentEntity>> {
     const qb = this.commentRepository
-      .createQueryBuilder('comment')
-      .select(GET_ALL_COMMENTS_SELECT);
+      .createQueryBuilder("comment")
+      .select(COMMENT_CONSTANTS.GET_ALL_COMMENTS_SELECT);
     if (isPagination) {
       const skip = getOffset(page, limit);
       qb.skip(skip).limit(limit);
     }
     const [items, total] = await qb.getManyAndCount();
 
-    const result = getPageinationMeta({ items, page, limit, total });
+    const result = getPaginationMeta({ items, page, limit, total });
     return result;
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<CommentEntity | null> {
     const existingComment = await findExistingEntity(this.commentRepository, {
       id,
     });
@@ -68,9 +74,9 @@ export class CommentsService {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
     const comment = await this.commentRepository
-      .createQueryBuilder('comment')
-      .select(GET_ONE_COMMENT_SELECT)
-      .where('comment.id =  :id', { id })
+      .createQueryBuilder("comment")
+      .select(COMMENT_CONSTANTS.GET_ONE_COMMENT_SELECT)
+      .where("comment.id =  :id", { id })
       .getOne();
     return comment;
   }
@@ -79,11 +85,11 @@ export class CommentsService {
     userId: string,
     commentId: string,
     updateCommentInput: UpdateCommentInput,
-  ) {
+  ): Promise<void> {
     const comment = await this.commentRepository
-      .createQueryBuilder('comment')
-      .leftJoinAndSelect('comment.blogPost', 'blogpost')
-      .where('comment.id = :id', {
+      .createQueryBuilder("comment")
+      .leftJoinAndSelect("comment.blogPost", "blogpost")
+      .where("comment.id = :id", {
         id: commentId,
       })
       .getOne();
@@ -98,6 +104,7 @@ export class CommentsService {
     }
     if (updateCommentInput.content)
       comment.content = updateCommentInput.content;
+    comment.status = COMMENT_STATUS.PENDING;
 
     if (updateCommentInput.isApproved !== undefined && !isPostOwner) {
       throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
@@ -112,10 +119,10 @@ export class CommentsService {
     await this.commentRepository.save(comment);
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: TokenPayload): Promise<void> {
     const comment = await this.commentRepository
-      .createQueryBuilder('comment')
-      .where('comment.id = :id', {
+      .createQueryBuilder("comment")
+      .where("comment.id = :id", {
         id,
       })
       .getOne();
@@ -123,6 +130,11 @@ export class CommentsService {
     if (!comment) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
+    const isOwner = comment.authorId === user.id;
+    const isAdmin = user.role === USER_ROLES.ADMIN;
+
+    if (!isOwner && !isAdmin)
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
 
     await this.commentRepository.softRemove(comment);
   }

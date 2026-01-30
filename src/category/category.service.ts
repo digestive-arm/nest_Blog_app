@@ -2,27 +2,34 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
-import { CreateCategoryInput } from './interfaces/category.interface';
-import { InjectRepository } from '@nestjs/typeorm';
-import { CategoryEntity } from 'src/modules/database/entities/category.entity';
-import { Not, Repository } from 'typeorm';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import { generateSlug } from 'src/utils/blogpost.utils';
-import { paginationInput } from 'src/common/interfaces/pagination.interfaces';
-import { getPageinationMeta } from 'src/common/helper/pagination.helper';
-import { getOffset } from '../common/helper/pagination.helper';
-import { CATEGORY_SELECT } from './category.constants';
-import { BlogpostEntity } from 'src/modules/database/entities/blogpost.entity';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { Not, Repository } from "typeorm";
+
+import {
+  getPaginationMeta,
+  getOffset,
+} from "src/common/helper/pagination.helper";
+import {
+  PaginationInput,
+  PaginationMeta,
+} from "src/common/interfaces/pagination.interfaces";
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
+import { CategoryEntity } from "src/modules/database/entities/category.entity";
+import { generateSlug } from "src/utils/blogpost.utils";
+
+import { CATEGORY_CONSTANTS } from "./category.constants";
+import {
+  CreateCategoryInput,
+  UpdateCategoryInput,
+} from "./interfaces/category.interface";
 
 @Injectable()
 export class CategoryService {
   constructor(
     @InjectRepository(CategoryEntity)
     private readonly categoryRepository: Repository<CategoryEntity>,
-    @InjectRepository(BlogpostEntity)
-    private readonly blogPostRepository: Repository<BlogpostEntity>,
   ) {}
 
   async create({ name, description }: CreateCategoryInput): Promise<void> {
@@ -45,23 +52,32 @@ export class CategoryService {
     await this.categoryRepository.save(category);
   }
 
-  async findAll({ page, limit, isPagination }: paginationInput) {
-    const qb = this.categoryRepository.createQueryBuilder('category');
-    qb.select(CATEGORY_SELECT);
+  async findAll({
+    page,
+    limit,
+    isPagination,
+  }: PaginationInput): Promise<PaginationMeta<CategoryEntity>> {
+    const qb = this.categoryRepository.createQueryBuilder("category");
+    qb.select(CATEGORY_CONSTANTS.GET_ALL_CATEGORY_SELECT).where(
+      "category.isActive = :isActive",
+      {
+        isActive: true,
+      },
+    );
 
     if (isPagination) {
       const offSet = getOffset(page, limit);
       qb.skip(offSet).take(limit);
     }
     const [items, total] = await qb.getManyAndCount();
-    const result = getPageinationMeta({ items, total, page, limit });
+    const result = getPaginationMeta({ items, total, page, limit });
     return result;
   }
 
-  async findOne(id: string) {
-    const qb = this.categoryRepository.createQueryBuilder('category');
-    qb.select(CATEGORY_SELECT).where(
-      'category.id = :id AND category.isActive = :isActive',
+  async findOne(id: string): Promise<CategoryEntity | null> {
+    const qb = this.categoryRepository.createQueryBuilder("category");
+    qb.select(CATEGORY_CONSTANTS.CATEGORY_SELECT).where(
+      "category.id = :id AND category.isActive = :isActive",
       {
         id,
         isActive: true,
@@ -77,7 +93,10 @@ export class CategoryService {
     return result;
   }
 
-  async update(id: string, updateCategoryInput: UpdateCategoryDto) {
+  async update(
+    id: string,
+    updateCategoryInput: UpdateCategoryInput,
+  ): Promise<void> {
     const category = await this.categoryRepository.findOne({
       where: { id },
     });
@@ -111,11 +130,9 @@ export class CategoryService {
     }
 
     await this.categoryRepository.save(category);
-
-    return category;
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<void> {
     const category = await this.categoryRepository.findOne({
       where: {
         id,
@@ -125,12 +142,6 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
-    await this.blogPostRepository
-      .createQueryBuilder()
-      .update()
-      .set({ categoryId: () => 'NULL' })
-      .where({ categoryId: id })
-      .execute();
 
     await this.categoryRepository.softRemove(category);
   }

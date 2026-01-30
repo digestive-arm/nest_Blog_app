@@ -1,8 +1,9 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
-import { BaseEntity } from '../base-entity';
-import { BlogpostEntity } from './blogpost.entity';
+import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
 
-@Entity('attachments')
+import { BaseEntity } from "./base-entity";
+import { BlogpostEntity } from "./blogpost.entity";
+
+@Entity("attachments")
 export class AttachmentEntity extends BaseEntity {
   @Column({
     nullable: false,
@@ -20,12 +21,12 @@ export class AttachmentEntity extends BaseEntity {
   })
   postId: string;
 
-  @ManyToOne(() => BlogpostEntity, (blopost) => blopost.attachments, {
+  @ManyToOne(() => BlogpostEntity, (blogPost) => blogPost.attachments, {
     nullable: true,
-    onDelete: 'CASCADE',
+    onDelete: "CASCADE",
   })
   @JoinColumn({
-    name: 'postId',
+    name: "postId",
   })
   blogPost: BlogpostEntity;
 }

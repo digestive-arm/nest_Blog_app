@@ -1,8 +1,9 @@
 import { applyDecorators } from "@nestjs/common";
+
 import { Transform } from "class-transformer";
 import { IsString } from "class-validator";
 
-export function TrimString() {
+export function TrimString(): PropertyDecorator {
   return applyDecorators(
     Transform(({ value }) => {
       if (value === null || value === undefined || value === "") {

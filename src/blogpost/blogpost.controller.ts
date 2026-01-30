@@ -11,35 +11,41 @@ import {
   UseInterceptors,
   UploadedFiles,
   HttpCode,
-} from '@nestjs/common';
-import { BlogpostService } from './blogpost.service';
-import { CreateBlogPostDto, UpdateBlogPostDto } from './dto/blogpost.dto';
-import { SUCCESS_MESSAGES } from 'src/constants/messages.constants';
-import { ApiSwaggerResponse } from 'src/modules/swagger/swagger.decorator';
-import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
-import { StatusCodes } from 'http-status-codes';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+} from "@nestjs/common";
+import { FilesInterceptor } from "@nestjs/platform-express";
+import { ApiTags } from "@nestjs/swagger";
+
+import { StatusCodes } from "http-status-codes";
+
+import { type TokenPayload } from "src/auth/auth-types";
+import { CommentsService } from "src/comments/comments.service";
+import { CreateCommentDto } from "src/comments/dto/comment.dto";
+import { PaginationMeta } from "src/common/interfaces/pagination.interfaces";
+import { uploadOptions } from "src/config/upload.config";
+import { SUCCESS_MESSAGES } from "src/constants/messages.constants";
+import { BLOG_POST_ROUTES } from "src/constants/routes";
+import { UPLOAD_CONSTANTS } from "src/constants/upload.constants";
+import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
+import { CommentEntity } from "src/modules/database/entities/comment.entity";
+import { CurrentUser } from "src/modules/decorators/get-current-user.decorator";
+import { TransformWith } from "src/modules/decorators/response-transformer.decorator";
+import { AuthGuard } from "src/modules/guards/auth.guard";
+import { RolesGuard } from "src/modules/guards/role.guard";
+import { MessageResponse } from "src/modules/swagger/dtos/response.dtos";
+import { ApiSwaggerResponse } from "src/modules/swagger/swagger.decorator";
+import { USER_ROLES } from "src/user/user-types";
+import { messageResponse } from "src/utils/response.utils";
+
+import { PaginationDto } from "../common/dto/pagination.dto";
+
 import {
   BlogPostResponse,
   GetAllBlogPostResponse,
-  GetAllCommentesOnPostResponse,
-} from './blogpost.response';
-import { BLOG_POST_ROUTES } from 'src/constants/routes';
-import { messageResponse } from 'src/utils/response.utils';
-import { AuthGuard } from 'src/modules/guards/auth.guard';
-import { RolesGuard } from 'src/modules/guards/role.guard';
-import { USER_ROLES } from 'src/user/user-types';
-import { OwnershipGuard } from 'src/modules/guards/ownership.guard';
-import { SearchBlogPostDto } from './dto/search.dto';
-import { ApiTags } from '@nestjs/swagger';
-import { CreateCommentDto } from 'src/comments/dto/comment.dto';
-import { CommentsService } from 'src/comments/comments.service';
-import { type TokenPayload } from 'src/auth/auth-types';
-import { CurrentUser } from 'src/modules/decorators/get-current-user.decorator';
-import { FILE_NAME, MAX_UPLOAD_COUNT } from 'src/constants/upload.constants';
-import { FilesInterceptor } from '@nestjs/platform-express';
-import { uploadOptions } from 'src/config/upload.config';
-import { TransformWith } from '../modules/decorators/response-transformer.decorator';
+  GetAllCommentsOnPostResponse,
+} from "./blogpost.response";
+import { BlogpostService } from "./blogpost.service";
+import { CreateBlogPostDto, UpdateBlogPostDto } from "./dto/blogpost.dto";
+import { SearchBlogPostDto } from "./dto/search.dto";
 
 @ApiTags(BLOG_POST_ROUTES.BLOG_POST)
 @Controller(BLOG_POST_ROUTES.BLOG_POST)
@@ -49,8 +55,14 @@ export class BlogpostController {
     private readonly commentService: CommentsService,
   ) {}
 
+  @UseInterceptors(
+    FilesInterceptor(
+      UPLOAD_CONSTANTS.FILE_NAME,
+      UPLOAD_CONSTANTS.MAX_UPLOAD_COUNT,
+      uploadOptions,
+    ),
+  )
   @Post(BLOG_POST_ROUTES.CREATE)
-  @UseInterceptors(FilesInterceptor(FILE_NAME, MAX_UPLOAD_COUNT, uploadOptions))
   @ApiSwaggerResponse(MessageResponse, {
     status: StatusCodes.CREATED,
   })
@@ -61,7 +73,7 @@ export class BlogpostController {
     @CurrentUser() user: TokenPayload,
     @UploadedFiles() files: Express.Multer.File[],
     @Body() { title, content, summary, categoryId }: CreateBlogPostDto,
-  ) {
+  ): Promise<MessageResponse> {
     await this.blogpostService.create(
       {
         title,
@@ -82,7 +94,9 @@ export class BlogpostController {
   })
   @TransformWith(GetAllBlogPostResponse)
   @HttpCode(StatusCodes.OK)
-  async findAll(@Query() { q, isPagination, page, limit }: SearchBlogPostDto) {
+  async findAll(
+    @Query() { q, isPagination, page, limit }: SearchBlogPostDto,
+  ): Promise<PaginationMeta<BlogpostEntity>> {
     return await this.blogpostService.findAll(
       {
         page,
@@ -99,7 +113,7 @@ export class BlogpostController {
   })
   @TransformWith(BlogPostResponse)
   @HttpCode(StatusCodes.OK)
-  async findOne(@Param('slug') slug: string) {
+  async findOne(@Param("slug") slug: string): Promise<BlogpostEntity> {
     return await this.blogpostService.findOne(slug);
   }
 
@@ -110,9 +124,9 @@ export class BlogpostController {
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
   async update(
     @CurrentUser() user: TokenPayload,
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() { title, content, summary, categoryId }: UpdateBlogPostDto,
-  ) {
+  ): Promise<MessageResponse> {
     await this.blogpostService.update(user.id, id, {
       title,
       categoryId,
@@ -126,18 +140,24 @@ export class BlogpostController {
   @ApiSwaggerResponse(MessageResponse)
   @TransformWith(MessageResponse)
   @HttpCode(StatusCodes.OK)
-  remove(@Param('id') id: string) {
-    this.blogpostService.remove(id);
+  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
+  async remove(
+    @Param("id") id: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<MessageResponse> {
+    await this.blogpostService.remove(id, user);
     return messageResponse(SUCCESS_MESSAGES.SUCCESS);
   }
 
-  @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR), OwnershipGuard)
   @ApiSwaggerResponse(MessageResponse)
   @Patch(BLOG_POST_ROUTES.PUBLISH)
   @TransformWith(MessageResponse)
   @HttpCode(StatusCodes.OK)
-  publish(@Param('id') id: string) {
-    this.blogpostService.publish(id);
+  async publish(
+    @Param("id") id: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<MessageResponse> {
+    await this.blogpostService.publish(id, user);
     return messageResponse(SUCCESS_MESSAGES.SUCCESS);
   }
 
@@ -150,21 +170,21 @@ export class BlogpostController {
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
   async createComment(
     @CurrentUser() user: TokenPayload,
-    @Param('id') postId: string,
+    @Param("id") postId: string,
     @Body() { content }: CreateCommentDto,
-  ) {
+  ): Promise<MessageResponse> {
     await this.commentService.create({ content, authorId: user.id, postId });
     return messageResponse(SUCCESS_MESSAGES.CREATED);
   }
 
   @Get(BLOG_POST_ROUTES.GET_COMMENTS_ON_POST)
-  @ApiSwaggerResponse(GetAllCommentesOnPostResponse)
-  @TransformWith(GetAllCommentesOnPostResponse)
+  @ApiSwaggerResponse(GetAllCommentsOnPostResponse)
+  @TransformWith(GetAllCommentsOnPostResponse)
   @HttpCode(StatusCodes.OK)
   async getCommentsOnPost(
     @Query() { page, limit, isPagination }: PaginationDto,
-    @Param('id') id: string,
-  ) {
+    @Param("id") id: string,
+  ): Promise<PaginationMeta<CommentEntity>> {
     return await this.blogpostService.getCommentsOnPost(id, {
       page,
       limit,

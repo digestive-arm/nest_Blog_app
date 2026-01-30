@@ -1,11 +1,12 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToOne } from 'typeorm';
-import { BlogpostEntity } from './blogpost.entity';
-import { COMMENT_STATUS } from '../../../comments/comments-types';
-import { UserEntity } from './user.entity';
-import { BaseEntity } from '../base-entity';
-import { blob } from 'stream/consumers';
+import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
 
-@Entity('comments')
+import { COMMENT_STATUS } from "../../../comments/comments-types";
+
+import { BaseEntity } from "./base-entity";
+import { BlogpostEntity } from "./blogpost.entity";
+import { UserEntity } from "./user.entity";
+
+@Entity("comments")
 export class CommentEntity extends BaseEntity {
   @Column({
     nullable: false,
@@ -25,7 +26,7 @@ export class CommentEntity extends BaseEntity {
 
   @ManyToOne(() => UserEntity)
   @JoinColumn({
-    name: 'authorId',
+    name: "authorId",
   })
   user: UserEntity;
 
@@ -36,10 +37,10 @@ export class CommentEntity extends BaseEntity {
 
   @ManyToOne(() => BlogpostEntity, (blogpost) => blogpost.attachments, {
     nullable: false,
-    onDelete: 'CASCADE',
+    onDelete: "CASCADE",
   })
   @JoinColumn({
-    name: 'postId',
+    name: "postId",
   })
   blogPost: BlogpostEntity;
 }

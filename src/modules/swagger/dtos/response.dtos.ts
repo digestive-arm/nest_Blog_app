@@ -1,6 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ApiPropertyWritable } from '../swagger.writable.decorator';
-import { Expose } from 'class-transformer';
+import { ApiProperty } from "@nestjs/swagger";
+
+import { Expose } from "class-transformer";
+
+import { ApiPropertyWritable } from "../swagger.writable.decorator";
 
 export class ResponseDto<TData = null> {
   @ApiProperty()
@@ -11,8 +13,8 @@ export class ResponseDto<TData = null> {
 }
 
 export enum ResponseDtoTypeEnum {
-  Array = 'array',
-  Object = 'object',
+  Array = "array",
+  Object = "object",
 }
 
 export class MessageResponse {

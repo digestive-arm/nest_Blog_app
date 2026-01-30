@@ -1,43 +1,51 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
+
+import { Transform } from "class-transformer";
 import {
   IsBoolean,
   IsNotEmpty,
   IsOptional,
   MaxLength,
-  Min,
   MinLength,
-} from 'class-validator';
-import { TrimString } from 'src/modules/decorators/trim-string.decorator';
+} from "class-validator";
+
+import { IsSafeText } from "src/modules/decorators/safe-text.decorator";
+import { TrimString } from "src/modules/decorators/trim-string.decorator";
 
 export class CreateCategoryDto {
-  @ApiProperty({
-    description: 'Name of the category',
-    example: 'Web Development',
-  })
-  @TrimString()
   @IsNotEmpty({
-    message: 'Category must have a name',
+    message: "Category must have a name",
+  })
+  @ApiProperty({
+    description: "Name of the category",
+    example: "Web Development",
   })
   @MinLength(3, {
     message:
-      'Category name length must be greater than $constraint characters.',
+      "Category name length must be greater than $constraint1 characters.",
   })
-  @MaxLength(15)
-  name: string;
-
-  @ApiPropertyOptional({
-    description: 'description of the category',
-    example:
-      'Web development is the process of building and maintaining websites and web applications for the internet. It involves designing user interfaces, writing server-side and client-side logic, and ensuring performance, security, and scalability.',
+  @MaxLength(15, {
+    message: "Category name length must be less than $constraint1 characters.",
   })
   @TrimString()
+  @IsSafeText()
+  name: string;
+
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: "description of the category",
+    example:
+      "Web development is the process of building and maintaining websites and web applications for the internet. It involves designing user interfaces, writing server-side and client-side logic, and ensuring performance, security, and scalability.",
+  })
   @MinLength(30, {
     message:
-      'Category name length must be greater than $constraint characters.',
+      "Category name length must be greater than $constraint1 characters.",
   })
-  @MaxLength(1500)
-  @IsOptional()
+  @MaxLength(1500, {
+    message: "Category name length must be less than $constraint1 characters.",
+  })
+  @TrimString()
+  @IsSafeText()
   description?: string;
 }
 

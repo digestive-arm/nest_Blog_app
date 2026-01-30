@@ -1,5 +1,6 @@
-import { Expose } from 'class-transformer';
-import { ApiPropertyWritable } from 'src/modules/swagger/swagger.writable.decorator';
+import { Expose } from "class-transformer";
+
+import { ApiPropertyWritable } from "src/modules/swagger/swagger.writable.decorator";
 
 export class PaginationMetaResponse {
   @Expose()

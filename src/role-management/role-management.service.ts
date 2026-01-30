@@ -1,48 +1,67 @@
-import { InjectRepository } from '@nestjs/typeorm';
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { Repository, DataSource } from "typeorm";
+
+import { TokenPayload } from "src/auth/auth-types";
+import {
+  getOffset,
+  getPaginationMeta,
+} from "src/common/helper/pagination.helper";
+import { PaginationMeta } from "src/common/interfaces/pagination.interfaces";
+import { ERROR_MESSAGES } from "src/constants/messages.constants";
 import {
   RoleApproval,
   RoleApprovalStatus,
-} from 'src/modules/database/entities/role-management.entity';
-import { Repository } from 'typeorm';
-import { USER_ROLES } from 'src/user/user-types';
-import { UserEntity } from 'src/modules/database/entities/user.entity';
-import { ERROR_MESSAGES } from 'src/constants/messages.constants';
-import { ID_SELECT_FIELDS } from 'src/user/user.constants';
+} from "src/modules/database/entities/role-management.entity";
+import { UserEntity } from "src/modules/database/entities/user.entity";
+import { USER_ROLES } from "src/user/user-types";
+import { findExistingEntity } from "src/utils/db.utils";
+
+import { ProcessRequestInput } from "./interfaces/role-management.interface";
 
 @Injectable()
 export class RoleManagementService {
+  requestUpdgrade(role: USER_ROLES, userId: string) {
+    throw new Error('Method not implemented.');
+  }
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(RoleApproval)
     private readonly roleApprovalRepository: Repository<RoleApproval>,
-    @InjectRepository(UserEntity) private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  //request upgrade
-  async requestUpdgrade(requestedRole: USER_ROLES, id: string): Promise<void> {
-    const user = await this.userRepository
-      .createQueryBuilder('user')
-      .select(ID_SELECT_FIELDS)
-      .where('user.id = :id', {
-        id,
-      })
-      .getOne();
+  // request upgrade
+  async requestUpgrade(
+    requestedRole: USER_ROLES,
+    user: TokenPayload,
+  ): Promise<void> {
+    const existingUser = await findExistingEntity(this.userRepository, {
+      id: user.id,
+    });
 
-    if (!user) {
+    if (!existingUser) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
-    const requestExists = await this.roleApprovalRepository
-      .createQueryBuilder('role')
-      .where('role.userId = :id AND role.requestedRole = :requestedRole', {
-        id,
-        requestedRole,
-      })
-      .getOne();
+    if (user.role === requestedRole) {
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
+    }
+
+    const requestExists = await findExistingEntity(
+      this.roleApprovalRepository,
+      {
+        userId: user.id,
+        status: RoleApprovalStatus.PENDING,
+      },
+    );
 
     if (requestExists) {
       throw new ConflictException(ERROR_MESSAGES.CONFLICT);
@@ -50,91 +69,92 @@ export class RoleManagementService {
 
     await this.roleApprovalRepository.save({
       requestedRole,
-      userId: id,
+      userId: user.id,
     });
   }
 
-  //get my requests
+  // get my requests
   async getMyRequests(id: string): Promise<Partial<RoleApproval[]>> {
-    const user = await this.userRepository
-      .createQueryBuilder('user')
-      .select(ID_SELECT_FIELDS)
-      .where('user.id = :id', { id })
-      .getOne();
+    const user = await findExistingEntity(this.userRepository, {
+      id,
+    });
 
     if (!user) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
     const result = await this.roleApprovalRepository
-      .createQueryBuilder('role')
-      .where('role.userId = :id', {
+      .createQueryBuilder("role")
+      .where("role.userId = :id", {
         id,
       })
       .getMany();
 
-    if (result.length === 0) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
-    }
-
     return result;
   }
 
-  //get pending reqests
-  async getPendingRequest(): Promise<RoleApproval[]> {
-    const result = await this.roleApprovalRepository
-      .createQueryBuilder('role')
-      .where('role.status = :status', {
+  // get pending requests
+  async getPendingRequest({
+    page,
+    limit,
+    isPagination,
+  }: ProcessRequestInput): Promise<PaginationMeta<RoleApproval>> {
+    const qb = this.roleApprovalRepository
+      .createQueryBuilder("role")
+      .where("role.status = :status", {
         status: RoleApprovalStatus.PENDING,
-      })
-      .getMany();
+      });
 
+    if (isPagination) {
+      const offset = getOffset(page, limit);
+      qb.skip(offset).take(limit);
+    }
+    const [items, total] = await qb.getManyAndCount();
+
+    const result = getPaginationMeta({ items, total, page, limit });
     return result;
   }
 
-  //approve / reject request
+  // approve / reject request
   async processRequest(
     isApproved: boolean,
     roleApprovalRequestId: string,
   ): Promise<void> {
-    const requestExists = await this.roleApprovalRepository
-      .createQueryBuilder('role')
-      .where('role.id = :roleApprovalRequestId', {
-        roleApprovalRequestId,
-      })
-      .getOne();
+    await this.dataSource.transaction(async (manager) => {
+      const transactionalRoleRepo = manager.withRepository(
+        this.roleApprovalRepository,
+      );
+      const transactionalUserRepo = manager.withRepository(this.userRepository);
 
-    if (!requestExists) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
-    }
-    const updateStatus = isApproved
-      ? RoleApprovalStatus.APPROVED
-      : RoleApprovalStatus.REJECTED;
+      const requestExists = await transactionalRoleRepo
+        .createQueryBuilder("role")
+        .where("role.id = :roleApprovalRequestId", {
+          roleApprovalRequestId,
+        })
+        .getOne();
 
-    const roleApproval = await this.roleApprovalRepository.preload({
-      id: roleApprovalRequestId,
-      status: updateStatus,
-    });
-
-    if (!roleApproval) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
-    }
-
-    await this.roleApprovalRepository.save(roleApproval);
-
-    const { userId, requestedRole: role } = requestExists;
-
-    if (isApproved) {
-      const user = await this.userRepository.preload({
-        id: userId,
-        role,
-      });
-
-      if (!user) {
+      if (!requestExists) {
         throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
       }
+      const { userId, requestedRole: role } = requestExists;
 
-      await this.userRepository.save(user);
-    }
+      if (isApproved) {
+        const user = await transactionalUserRepo.preload({
+          id: userId,
+          role,
+        });
+
+        if (!user) {
+          throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
+        }
+
+        await transactionalUserRepo.save(user);
+      }
+      requestExists.status = isApproved
+        ? RoleApprovalStatus.APPROVED
+        : RoleApprovalStatus.REJECTED;
+
+      await transactionalRoleRepo.save(requestExists);
+    });
   }
 }

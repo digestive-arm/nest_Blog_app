@@ -8,29 +8,33 @@ import {
   Get,
   UseGuards,
   HttpCode,
-} from '@nestjs/common';
-import { AuthService } from './auth.service';
-import type { Response, Request } from 'express';
-import { CreateUserDto, LoginUserDto } from 'src/auth/dto/auth.dto';
-import { messageResponse } from 'src/utils/response.utils';
-import { StatusCodes } from 'http-status-codes';
-import { ApiTags, ApiBody } from '@nestjs/swagger';
+} from "@nestjs/common";
+import { ApiTags, ApiBody } from "@nestjs/swagger";
+
+import { StatusCodes } from "http-status-codes";
+
+import { CreateUserDto, LoginUserDto } from "src/auth/dto/auth.dto";
 import {
-  refreshTokenConfig,
-  accessTokenConfig,
-} from 'src/config/cookie.config';
-import { ApiSwaggerResponse } from 'src/modules/swagger/swagger.decorator';
-import { MessageResponse } from 'src/modules/swagger/dtos/response.dtos';
+  refreshTokenCookieConfig,
+  accessTokenCookieConfig,
+} from "src/config/cookie.config";
 import {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
-} from 'src/constants/messages.constants';
-import { AUTH_ROUTES } from 'src/constants/routes';
-import { CurrentUser } from 'src/modules/decorators/get-current-user.decorator';
-import { AuthGuard } from 'src/modules/guards/auth.guard';
-import { type TokenPayload } from './auth-types';
-import { CurrentUserResponse } from './auth.response';
-import { TransformWith } from 'src/modules/decorators/response-transformer.decorator';
+} from "src/constants/messages.constants";
+import { AUTH_ROUTES } from "src/constants/routes";
+import { CurrentUser } from "src/modules/decorators/get-current-user.decorator";
+import { TransformWith } from "src/modules/decorators/response-transformer.decorator";
+import { AuthGuard } from "src/modules/guards/auth.guard";
+import { MessageResponse } from "src/modules/swagger/dtos/response.dtos";
+import { ApiSwaggerResponse } from "src/modules/swagger/swagger.decorator";
+import { messageResponse } from "src/utils/response.utils";
+
+import { type TokenPayload } from "./auth-types";
+import { CurrentUserResponse } from "./auth.response";
+import { AuthService } from "./auth.service";
+
+import type { Response, Request } from "express";
 
 @ApiTags(AUTH_ROUTES.AUTH)
 @Controller(AUTH_ROUTES.AUTH)
@@ -42,7 +46,7 @@ export class AuthController {
   @TransformWith(CurrentUserResponse)
   @HttpCode(StatusCodes.OK)
   @UseGuards(AuthGuard)
-  getMe(@CurrentUser() user: TokenPayload) {
+  getMe(@CurrentUser() user: TokenPayload): TokenPayload {
     return user;
   }
 
@@ -53,7 +57,7 @@ export class AuthController {
   @ApiSwaggerResponse(MessageResponse, { status: StatusCodes.CREATED })
   @TransformWith(MessageResponse)
   @HttpCode(StatusCodes.CREATED)
-  async register(@Body() user: CreateUserDto) {
+  async register(@Body() user: CreateUserDto): Promise<MessageResponse> {
     await this.authService.register(user);
     return messageResponse(SUCCESS_MESSAGES.CREATED);
   }
@@ -68,14 +72,14 @@ export class AuthController {
     })
     res: Response,
     @Body() { email, password }: LoginUserDto,
-  ) {
+  ): Promise<MessageResponse> {
     const { accessToken, refreshToken } = await this.authService.login({
       email,
       password,
     });
 
-    res.cookie('refreshToken', refreshToken, refreshTokenConfig);
-    res.cookie('accessToken', accessToken, accessTokenConfig);
+    res.cookie("refreshToken", refreshToken, refreshTokenCookieConfig);
+    res.cookie("accessToken", accessToken, accessTokenCookieConfig);
 
     return messageResponse(SUCCESS_MESSAGES.LOGGED_IN);
   }
@@ -90,18 +94,18 @@ export class AuthController {
     })
     res: Response,
     @Req() req: Request,
-  ) {
-    const oldRefrshToken: unknown = req.cookies['refreshToken'];
+  ): Promise<MessageResponse> {
+    const oldRefreshToken: unknown = req.cookies["refreshToken"];
 
-    if (typeof oldRefrshToken !== 'string') {
-      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_REFRESHTOKEN);
+    if (typeof oldRefreshToken !== "string") {
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
     }
 
     const { accessToken, refreshToken } =
-      await this.authService.refresh(oldRefrshToken);
+      await this.authService.refresh(oldRefreshToken);
 
-    res.cookie('refreshToken', refreshToken, refreshTokenConfig);
-    res.cookie('accessToken', accessToken, accessTokenConfig);
+    res.cookie("refreshToken", refreshToken, refreshTokenCookieConfig);
+    res.cookie("accessToken", accessToken, accessTokenCookieConfig);
 
     return messageResponse(SUCCESS_MESSAGES.SUCCESS);
   }
@@ -110,15 +114,18 @@ export class AuthController {
   @ApiSwaggerResponse(MessageResponse)
   @TransformWith(MessageResponse)
   @HttpCode(StatusCodes.OK)
-  logout(
+  @UseGuards(AuthGuard)
+  async logout(
     @Res({
       passthrough: true,
     })
     res: Response,
-  ) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    @CurrentUser() user: TokenPayload,
+  ): Promise<MessageResponse> {
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
 
+    await this.authService.logout(user.id);
     return messageResponse(SUCCESS_MESSAGES.SUCCESS);
   }
 }
