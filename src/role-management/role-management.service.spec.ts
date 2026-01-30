@@ -22,7 +22,7 @@ describe("Role management service suit", () => {
   let userRepository: jest.Mocked<Repository<UserEntity>>;
 
   const mockDataSource = {
-    transaction: jest.fn(async (cb) => cb({})),
+    transaction: jest.fn(),
     createQueryRunner: jest.fn(),
   };
   const mockUserEntity: TokenPayload = {
@@ -109,6 +109,148 @@ describe("Role management service suit", () => {
           role: USER_ROLES.READER,
         }),
       ).rejects.toThrow(ConflictException);
+    });
+  });
+  describe("getMyRequest()", () => {
+    it("throws NotFoundException if user does not exist", async () => {
+      userRepository.exists.mockResolvedValue(false);
+      await expect(
+        roleManagementService.getMyRequests(mockUserEntity.id),
+      ).rejects.toThrow(NotFoundException);
+    });
+    it("returns role requests", async () => {
+      userRepository.exists.mockResolvedValue(true); // user exists
+      const mockRequests = [{ id: mockUserEntity.id }];
+      roleManagementRepository.createQueryBuilder = jest.fn(() => ({
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockRequests),
+      })) as any;
+      const result = await roleManagementService.getMyRequests(
+        mockUserEntity.id,
+      );
+      expect(result).toEqual(mockRequests);
+    });
+  });
+
+  describe("getPendingRequests()", () => {
+    it("returns requests with pagination", async () => {
+      const mockPendingRequests = [[{ id: 1 }, { id: 2 }], 2];
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue(mockPendingRequests),
+      };
+
+      roleManagementRepository.createQueryBuilder = jest.fn(() => qb) as any;
+
+      const result = await roleManagementService.getPendingRequest({
+        page: 1,
+        limit: 1,
+        isPagination: true,
+      });
+
+      expect(qb.skip).toHaveBeenCalled();
+      expect(qb.take).toHaveBeenCalled();
+
+      expect(result.data).toEqual(mockPendingRequests[0]);
+      expect(result.meta.itemsCount).toBe(mockPendingRequests.length);
+    });
+  });
+
+  describe("processRequest()", () => {
+    it("approves a request and updates user role", async () => {
+      const mockRequest = {
+        id: "r1",
+        userId: "u1",
+        requestedRole: USER_ROLES.ADMIN,
+        status: "PENDING",
+      };
+
+      const mockUser = {
+        id: "u1",
+        role: USER_ROLES.ADMIN,
+      };
+
+      const save = jest.fn();
+      const preload = jest.fn().mockResolvedValue(mockUser);
+
+      const getOne = jest.fn().mockResolvedValue(mockRequest);
+      const where = jest.fn().mockReturnValue({ getOne });
+      const createQueryBuilder = jest.fn().mockReturnValue({ where });
+
+      const roleRequestRepoMock = {
+        createQueryBuilder,
+        save,
+      };
+
+      const userRepoMock = {
+        save,
+        preload,
+      };
+
+      const withRepository = jest
+        .fn()
+        .mockImplementation((repo) =>
+          repo === roleManagementRepository
+            ? roleRequestRepoMock
+            : userRepoMock,
+        );
+
+      mockDataSource.transaction.mockImplementation((cb) =>
+        cb({ withRepository }),
+      );
+
+      await roleManagementService.processRequest(true, "r1");
+
+      expect(preload).toHaveBeenCalled();
+      expect(save).toHaveBeenCalled();
+    });
+
+    it("throws NotFoundException if no request exists", async () => {
+      const getOne = jest.fn().mockResolvedValue(null);
+      const where = jest.fn().mockReturnValue({ getOne });
+      const createQueryBuilder = jest.fn().mockReturnValue({ where });
+      const repoMock = {
+        createQueryBuilder,
+      };
+      const withRepository = jest.fn().mockReturnValue(repoMock);
+
+      mockDataSource.transaction.mockImplementation((cb) =>
+        cb({
+          withRepository,
+        }),
+      );
+
+      await expect(
+        roleManagementService.processRequest(true, "r1"),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("rejects request", async () => {
+      const mockRequest = {
+        id: "r1",
+        userId: "u1",
+        requestedRole: USER_ROLES.ADMIN,
+        status: "PENDING",
+      };
+      const save = jest.fn();
+      const getOne = jest.fn().mockResolvedValue(mockRequest);
+      const where = jest.fn().mockReturnValue({ getOne });
+      const createQueryBuilder = jest.fn().mockReturnValue({ where });
+      const withRepository = jest.fn().mockReturnValue({
+        createQueryBuilder,
+        save,
+      });
+
+      mockDataSource.transaction.mockImplementation((cb) =>
+        cb({
+          withRepository,
+        }),
+      );
+
+      await roleManagementService.processRequest(false, "r1");
+      expect(save).toHaveBeenCalled();
     });
   });
 });
