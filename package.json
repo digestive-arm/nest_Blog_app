@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@cspell/eslint-plugin": "^9.6.2",
+    "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
@@ -47,6 +48,7 @@
     "eslint-plugin-import": "^2.32.0",
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^7.0.13",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
@@ -70,6 +72,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^22.10.7",
+    "@types/nodemailer": "^7.0.9",
     "@types/streamifier": "^0.1.2",
     "@types/supertest": "^6.0.2",
     "dotenv-cli": "^11.0.0",
@@ -92,19 +95,24 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },
-"jest": {
-  "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
-  "testRegex": ".*\\.spec\\.ts$",
-  "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
-  },
-  "moduleNameMapper": {
-    "^src/(.*)$": "<rootDir>/src/$1"
-  },
-  "collectCoverageFrom": ["src/**/*.(t|j)s"],
-  "coverageDirectory": "coverage",
-  "testEnvironment": "node"
-}
-
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": ".",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/src/$1"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.(t|j)s"
+    ],
+    "coverageDirectory": "coverage",
+    "testEnvironment": "node"
+  }
 }

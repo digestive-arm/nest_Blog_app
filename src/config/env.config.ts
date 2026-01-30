@@ -17,4 +17,8 @@ export const secretConfig = {
   aesEncryptionKey: getOsEnv("AES_ENCRYPTION_KEY"),
   accessCookieExpirationTime: getOsEnv("ACCESS_COOKIE_EXPIRATION_TIME"),
   refreshCookieExpirationDay: getOsEnv("REFRESH_COOKIE_EXPIRATION_DAY"),
+  mailerServiceHost: getOsEnv("MAILER_SERVICE_HOST"),
+  mailerServicePort: getOsEnv("MAILER_SERVICE_PORT"),
+  mailerServiceUser: getOsEnv("MAILER_SERVICE_USER"),
+  mailerServicePassword: getOsEnv("MAILER_SERVICE_PASSWORD"),
 };
