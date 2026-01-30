@@ -1,5 +1,5 @@
 import { Logger, ValidationPipe } from "@nestjs/common";
-import { NestFactory } from "@nestjs/core";
+import { NestFactory, Reflector } from "@nestjs/core";
 import {
   SwaggerModule,
   DocumentBuilder,
@@ -9,9 +9,12 @@ import {
 import cookieParser from "cookie-parser";
 
 import { AppModule } from "./app.module";
+import { AllExceptionFilter } from './common/filters/global-exception.filter';
+import { SuccessInterceptor } from './common/interceptors/success.interceptor';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  const reflector = app.get(Reflector);
 
   app.use(cookieParser());
 
@@ -28,6 +31,9 @@ async function bootstrap(): Promise<void> {
       transform: true,
     }),
   );
+  app.useGlobalInterceptors(new SuccessInterceptor(reflector));
+
+  app.useGlobalFilters(new AllExceptionFilter());
 
   const documentFactory = (): OpenAPIObject =>
     SwaggerModule.createDocument(app, config);

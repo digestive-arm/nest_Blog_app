@@ -27,6 +27,9 @@ import { ProcessRequestInput } from "./interfaces/role-management.interface";
 
 @Injectable()
 export class RoleManagementService {
+  requestUpdgrade(role: USER_ROLES, userId: string) {
+    throw new Error('Method not implemented.');
+  }
   constructor(
     private readonly dataSource: DataSource,
     @InjectRepository(RoleApproval)

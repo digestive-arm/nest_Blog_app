@@ -111,7 +111,6 @@ export class AuthService {
 
     const user = await this.userRepository
       .createQueryBuilder("user")
-      .select("user.refreshToken")
       .where("user.id = :id ", { id })
       .getOne();
 
@@ -129,6 +128,7 @@ export class AuthService {
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
 
+    user.refreshToken = refreshToken;
     await this.userRepository.save(user);
 
     return { accessToken, refreshToken };

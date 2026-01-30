@@ -5,33 +5,32 @@ import {
   Patch,
   Param,
   Delete,
-  Res,
   Query,
   UseGuards,
+  HttpCode,
 } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 
+import { StatusCodes } from "http-status-codes";
+
 import { type TokenPayload } from "src/auth/auth-types";
 import { PaginationDto } from "src/common/dto/pagination.dto";
-import { type PaginationMeta } from "src/common/interfaces/pagination.interfaces";
+import { PaginationMeta } from "src/common/interfaces/pagination.interfaces";
 import { SUCCESS_MESSAGES } from "src/constants/messages.constants";
 import { USER_ROUTES } from "src/constants/routes";
-import { type UserEntity } from "src/modules/database/entities/user.entity";
+import { UserEntity } from "src/modules/database/entities/user.entity";
 import { CurrentUser } from "src/modules/decorators/get-current-user.decorator";
+import { TransformWith } from "src/modules/decorators/response-transformer.decorator";
 import { AuthGuard } from "src/modules/guards/auth.guard";
 import { RolesGuard } from "src/modules/guards/role.guard";
 import { MessageResponse } from "src/modules/swagger/dtos/response.dtos";
 import { ApiSwaggerResponse } from "src/modules/swagger/swagger.decorator";
-import responseUtils, {
-  type CommonResponseType,
-} from "src/utils/response.utils";
+import { messageResponse } from "src/utils/response.utils";
 
 import { UpdateUserDto } from "./dto/user.dto";
 import { USER_ROLES } from "./user-types";
 import { FindAllUsersResponse, UserResponse } from "./user.response";
 import { UserService } from "./user.service";
-
-import type { Response } from "express";
 
 @ApiTags(USER_ROUTES.USER)
 @Controller(USER_ROUTES.USER)
@@ -39,85 +38,51 @@ import type { Response } from "express";
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Get(USER_ROUTES.FIND_ALL)
   @ApiSwaggerResponse(FindAllUsersResponse)
-  @Get()
+  @TransformWith(FindAllUsersResponse)
+  @HttpCode(StatusCodes.OK)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   async findAll(
-    @Res() res: Response,
     @Query() { page, limit, isPagination }: PaginationDto,
-  ): Promise<Response<CommonResponseType<PaginationMeta<UserEntity>>>> {
-    try {
-      const result = await this.userService.findAll({
-        page,
-        limit,
-        isPagination,
-      });
-      return responseUtils.success(res, {
-        data: result,
-        transformWith: FindAllUsersResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+  ): Promise<PaginationMeta<UserEntity>> {
+    return await this.userService.findAll({
+      page,
+      limit,
+      isPagination,
+    });
   }
 
-  @ApiSwaggerResponse(UserResponse)
   @Get(USER_ROUTES.FIND_ONE)
+  @ApiSwaggerResponse(UserResponse)
+  @TransformWith(UserResponse)
+  @HttpCode(StatusCodes.OK)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
-  async findOne(
-    @Res() res: Response,
-    @Param("id") id: string,
-  ): Promise<Response<CommonResponseType<UserEntity>>> {
-    try {
-      const result = await this.userService.findOne(id);
-      return responseUtils.success(res, {
-        data: result,
-        transformWith: UserResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+  async findOne(@Param("id") id: string): Promise<UserEntity> {
+    return await this.userService.findOne(id);
   }
 
-  @ApiSwaggerResponse(MessageResponse)
   @Patch(USER_ROUTES.UPDATE)
+  @ApiSwaggerResponse(MessageResponse)
+  @TransformWith(MessageResponse)
+  @HttpCode(StatusCodes.OK)
   @UseGuards(AuthGuard)
   async update(
-    @Res() res: Response,
     @CurrentUser() user: TokenPayload,
     @Param("id") id: string,
     @Body() updateUserParams: UpdateUserDto,
-  ): Promise<Response<CommonResponseType<MessageResponse>>> {
-    try {
-      await this.userService.update(user.id, id, updateUserParams);
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.UPDATED,
-        },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+  ): Promise<MessageResponse> {
+    await this.userService.update(user.id, id, updateUserParams);
+    return messageResponse(SUCCESS_MESSAGES.SUCCESS);
   }
 
-  @ApiSwaggerResponse(MessageResponse)
   @Delete(USER_ROUTES.DELETE)
+  @ApiSwaggerResponse(MessageResponse)
+  @TransformWith(MessageResponse)
+  @HttpCode(StatusCodes.OK)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
-  async remove(
-    @Res() res: Response,
-    @Param("id") id: string,
-  ): Promise<Response<CommonResponseType<MessageResponse>>> {
-    try {
-      await this.userService.remove(id);
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.DELETED,
-        },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+  async remove(@Param("id") id: string): Promise<MessageResponse> {
+    await this.userService.remove(id);
+    return messageResponse(SUCCESS_MESSAGES.SUCCESS);
   }
 }

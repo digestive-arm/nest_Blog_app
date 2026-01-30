@@ -6,27 +6,27 @@ import {
   Patch,
   Param,
   Delete,
-  Res,
   Query,
+  HttpCode,
   UseGuards,
 } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 
-import { type Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
 import { PaginationDto } from "src/common/dto/pagination.dto";
 import { PaginationMeta } from "src/common/interfaces/pagination.interfaces";
 import { SUCCESS_MESSAGES } from "src/constants/messages.constants";
+import { CATEGORY_ROUTES } from "src/constants/routes";
 import { CategoryEntity } from "src/modules/database/entities/category.entity";
+import { TransformWith } from "src/modules/decorators/response-transformer.decorator";
 import { AuthGuard } from "src/modules/guards/auth.guard";
 import { RolesGuard } from "src/modules/guards/role.guard";
 import { MessageResponse } from "src/modules/swagger/dtos/response.dtos";
 import { ApiSwaggerResponse } from "src/modules/swagger/swagger.decorator";
 import { USER_ROLES } from "src/user/user-types";
-import responseUtils, { CommonResponseType } from "src/utils/response.utils";
+import { messageResponse } from "src/utils/response.utils";
 
-import { CATEGORY_ROUTES } from "./../constants/routes";
 import { CategoryResponse, GetAllCategoryResponse } from "./category.response";
 import { CategoryService } from "./category.service";
 import { CreateCategoryDto, UpdateCategoryDto } from "./dto/category.dto";
@@ -40,101 +40,58 @@ export class CategoryController {
   @ApiSwaggerResponse(MessageResponse, {
     status: StatusCodes.CREATED,
   })
+  @TransformWith(MessageResponse)
+  @HttpCode(StatusCodes.CREATED)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   async create(
-    @Res() res: Response,
     @Body() { name, description }: CreateCategoryDto,
-  ): Promise<Response<CommonResponseType<MessageResponse>>> {
-    try {
-      await this.categoryService.create({ name, description });
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.CREATED,
-        },
-        transformWith: MessageResponse,
-        status: StatusCodes.CREATED,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+  ): Promise<MessageResponse> {
+    await this.categoryService.create({ name, description });
+    return messageResponse(SUCCESS_MESSAGES.CREATED);
   }
 
   @Get(CATEGORY_ROUTES.GET_ALL)
   @ApiSwaggerResponse(GetAllCategoryResponse)
+  @TransformWith(GetAllCategoryResponse)
+  @HttpCode(StatusCodes.OK)
   async findAll(
-    @Res() res: Response,
     @Query() { page, limit, isPagination }: PaginationDto,
-  ): Promise<Response<CommonResponseType<PaginationMeta<CategoryEntity>>>> {
-    try {
-      const result = await this.categoryService.findAll({
-        page,
-        limit,
-        isPagination,
-      });
-      return responseUtils.success(res, {
-        data: result,
-        transformWith: GetAllCategoryResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+  ): Promise<PaginationMeta<CategoryEntity>> {
+    return await this.categoryService.findAll({
+      page,
+      limit,
+      isPagination,
+    });
   }
 
   @Get(CATEGORY_ROUTES.GET_ONE)
   @ApiSwaggerResponse(CategoryResponse)
-  async findOne(
-    @Res() res: Response,
-    @Param("id") id: string,
-  ): Promise<Response<CommonResponseType<CategoryEntity>>> {
-    try {
-      const result = await this.categoryService.findOne(id);
-      return responseUtils.success(res, {
-        data: result,
-        transformWith: CategoryResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+  @TransformWith(CategoryResponse)
+  @HttpCode(StatusCodes.OK)
+  async findOne(@Param("id") id: string): Promise<CategoryEntity | null> {
+    return await this.categoryService.findOne(id);
   }
 
   @Patch(CATEGORY_ROUTES.UPDATE)
   @ApiSwaggerResponse(MessageResponse)
+  @TransformWith(MessageResponse)
+  @HttpCode(StatusCodes.OK)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
   async update(
-    @Res() res: Response,
     @Param("id") id: string,
     @Body() { name, description, isActive }: UpdateCategoryDto,
-  ): Promise<Response<CommonResponseType<MessageResponse>>> {
-    try {
-      await this.categoryService.update(id, { name, description, isActive });
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.SUCCESS,
-        },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+  ): Promise<MessageResponse> {
+    await this.categoryService.update(id, { name, description, isActive });
+    return messageResponse(SUCCESS_MESSAGES.SUCCESS);
   }
 
   @Delete(CATEGORY_ROUTES.DELETE)
   @ApiSwaggerResponse(MessageResponse)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.ADMIN))
-  async remove(
-    @Res() res: Response,
-    @Param("id") id: string,
-  ): Promise<Response<CommonResponseType<MessageResponse>>> {
-    try {
-      await this.categoryService.remove(id);
-      return responseUtils.success(res, {
-        data: {
-          message: SUCCESS_MESSAGES.SUCCESS,
-        },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+  @TransformWith(MessageResponse)
+  @HttpCode(StatusCodes.OK)
+  async remove(@Param("id") id: string): Promise<MessageResponse> {
+    await this.categoryService.remove(id);
+    return messageResponse(SUCCESS_MESSAGES.SUCCESS);
   }
 }

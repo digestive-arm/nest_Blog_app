@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
   Get,
   UseGuards,
+  HttpCode,
 } from "@nestjs/common";
 import { ApiTags, ApiBody } from "@nestjs/swagger";
 
@@ -23,10 +24,11 @@ import {
 } from "src/constants/messages.constants";
 import { AUTH_ROUTES } from "src/constants/routes";
 import { CurrentUser } from "src/modules/decorators/get-current-user.decorator";
+import { TransformWith } from "src/modules/decorators/response-transformer.decorator";
 import { AuthGuard } from "src/modules/guards/auth.guard";
 import { MessageResponse } from "src/modules/swagger/dtos/response.dtos";
 import { ApiSwaggerResponse } from "src/modules/swagger/swagger.decorator";
-import responseUtils, { CommonResponseType } from "src/utils/response.utils";
+import { messageResponse } from "src/utils/response.utils";
 
 import { type TokenPayload } from "./auth-types";
 import { CurrentUserResponse } from "./auth.response";
@@ -39,17 +41,13 @@ import type { Response, Request } from "express";
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @ApiSwaggerResponse(CurrentUserResponse)
   @Get(AUTH_ROUTES.ME)
+  @ApiSwaggerResponse(CurrentUserResponse)
+  @TransformWith(CurrentUserResponse)
+  @HttpCode(StatusCodes.OK)
   @UseGuards(AuthGuard)
-  getMe(
-    @Res() res: Response,
-    @CurrentUser() user: TokenPayload,
-  ): Response<CommonResponseType<TokenPayload>> {
-    return responseUtils.success(res, {
-      data: user,
-      transformWith: CurrentUserResponse,
-    });
+  getMe(@CurrentUser() user: TokenPayload): TokenPayload {
+    return user;
   }
 
   @Post(AUTH_ROUTES.REGISTER)
@@ -57,93 +55,77 @@ export class AuthController {
     type: CreateUserDto,
   })
   @ApiSwaggerResponse(MessageResponse, { status: StatusCodes.CREATED })
-  async register(
-    @Res() res: Response,
-    @Body() user: CreateUserDto,
-  ): Promise<Response<CommonResponseType<MessageResponse>>> {
-    try {
-      await this.authService.register(user);
-      return responseUtils.success(res, {
-        data: { message: SUCCESS_MESSAGES.CREATED },
-        transformWith: MessageResponse,
-        status: StatusCodes.CREATED,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+  @TransformWith(MessageResponse)
+  @HttpCode(StatusCodes.CREATED)
+  async register(@Body() user: CreateUserDto): Promise<MessageResponse> {
+    await this.authService.register(user);
+    return messageResponse(SUCCESS_MESSAGES.CREATED);
   }
 
-  @ApiSwaggerResponse(MessageResponse)
   @Post(AUTH_ROUTES.LOGIN)
+  @ApiSwaggerResponse(MessageResponse)
+  @TransformWith(MessageResponse)
+  @HttpCode(StatusCodes.OK)
   async login(
-    @Res() res: Response,
+    @Res({
+      passthrough: true,
+    })
+    res: Response,
     @Body() { email, password }: LoginUserDto,
-  ): Promise<Response<CommonResponseType<MessageResponse>>> {
-    try {
-      const { accessToken, refreshToken } = await this.authService.login({
-        email,
-        password,
-      });
+  ): Promise<MessageResponse> {
+    const { accessToken, refreshToken } = await this.authService.login({
+      email,
+      password,
+    });
 
-      res.cookie("refreshToken", refreshToken, refreshTokenCookieConfig);
-      res.cookie("accessToken", accessToken, accessTokenCookieConfig);
+    res.cookie("refreshToken", refreshToken, refreshTokenCookieConfig);
+    res.cookie("accessToken", accessToken, accessTokenCookieConfig);
 
-      return responseUtils.success(res, {
-        data: { message: SUCCESS_MESSAGES.LOGGED_IN },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    return messageResponse(SUCCESS_MESSAGES.LOGGED_IN);
   }
 
-  @ApiSwaggerResponse(MessageResponse)
   @Post(AUTH_ROUTES.REFRESH)
+  @ApiSwaggerResponse(MessageResponse)
+  @TransformWith(MessageResponse)
+  @HttpCode(StatusCodes.OK)
   async refresh(
-    @Res() res: Response,
+    @Res({
+      passthrough: true,
+    })
+    res: Response,
     @Req() req: Request,
-  ): Promise<Response<CommonResponseType<MessageResponse>>> {
+  ): Promise<MessageResponse> {
     const oldRefreshToken: unknown = req.cookies["refreshToken"];
 
     if (typeof oldRefreshToken !== "string") {
       throw new UnauthorizedException(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
     }
 
-    try {
-      const { accessToken, refreshToken } =
-        await this.authService.refresh(oldRefreshToken);
+    const { accessToken, refreshToken } =
+      await this.authService.refresh(oldRefreshToken);
 
-      res.cookie("refreshToken", refreshToken, refreshTokenCookieConfig);
-      res.cookie("accessToken", accessToken, accessTokenCookieConfig);
+    res.cookie("refreshToken", refreshToken, refreshTokenCookieConfig);
+    res.cookie("accessToken", accessToken, accessTokenCookieConfig);
 
-      return responseUtils.success(res, {
-        data: { message: SUCCESS_MESSAGES.SUCCESS },
-        transformWith: MessageResponse,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    return messageResponse(SUCCESS_MESSAGES.SUCCESS);
   }
 
-  @ApiSwaggerResponse(MessageResponse, { status: StatusCodes.NO_CONTENT })
   @Post(AUTH_ROUTES.LOGOUT)
+  @ApiSwaggerResponse(MessageResponse)
+  @TransformWith(MessageResponse)
+  @HttpCode(StatusCodes.OK)
   @UseGuards(AuthGuard)
   async logout(
-    @Res() res: Response,
+    @Res({
+      passthrough: true,
+    })
+    res: Response,
     @CurrentUser() user: TokenPayload,
-  ): Promise<Response<CommonResponseType<MessageResponse>>> {
-    try {
-      res.clearCookie("accessToken");
-      res.clearCookie("refreshToken");
-      await this.authService.logout(user.id);
+  ): Promise<MessageResponse> {
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
 
-      return responseUtils.success(res, {
-        data: { message: SUCCESS_MESSAGES.SUCCESS },
-        transformWith: MessageResponse,
-        status: StatusCodes.NO_CONTENT,
-      });
-    } catch (error) {
-      return responseUtils.error({ res, error });
-    }
+    await this.authService.logout(user.id);
+    return messageResponse(SUCCESS_MESSAGES.SUCCESS);
   }
 }

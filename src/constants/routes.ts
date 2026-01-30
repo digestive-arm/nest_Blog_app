@@ -17,6 +17,7 @@ export const ROLE_MANAGEMENT_ROUTES = {
 
 export const USER_ROUTES = {
   USER: "users",
+  FIND_ALL: "",
   FIND_ONE: ":id",
   UPDATE: ":id",
   DELETE: ":id",
