@@ -12,13 +12,13 @@ export interface CommonResponseType<T> {
 }
 interface ErrorResponseType {
   res: Response;
-  error: Error | HttpException;
+  error: AnyType;
   additionalErrors?: Array<{ row: number; errorMessages: string[] }>;
   statusCode?: StatusCodes;
 }
 interface ErrorResponseFormat {
   statusCode: number;
-  message: string;
+  message: string | string[];
   errors?: Array<{ row: number; errorMessages: string[] }>;
 }
 
@@ -50,7 +50,7 @@ class ResponseUtils {
         : HttpStatus.BAD_REQUEST;
     const errorResponse: ErrorResponseFormat = {
       statusCode: statusCode ?? errorStatus,
-      message: error.response.message,
+      message: error.response,
     };
     if (additionalErrors && additionalErrors.length > 0) {
       errorResponse.errors = additionalErrors;
