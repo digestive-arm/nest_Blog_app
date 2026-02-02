@@ -61,3 +61,11 @@ export const COMMENT_ROUTES = {
   UPDATE: ":id",
   DELETE: ":id",
 };
+
+export const ADMIN_DASHBOARD_ROUTE = {
+  ADMIN_DASHBOARD: "admin-dashboard",
+};
+
+export const AUTHOR_DASHBOARD_ROUTE = {
+  AUTHOR_DASHBOARD: "author-dashboard",
+};
