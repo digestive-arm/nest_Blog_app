@@ -1,3 +1,4 @@
+import { BullModule } from "@nestjs/bull";
 import { Module } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
 
@@ -9,9 +10,11 @@ import { AuthModule } from "./auth/auth.module";
 import { BlogpostModule } from "./blogpost/blogpost.module";
 import { CategoryModule } from "./category/category.module";
 import { CommentsModule } from "./comments/comments.module";
+import { bullConfig } from "./config/bull.config";
 import transportConfig from "./config/transport.config";
 import { CronModule } from "./modules/cron/cron.module";
 import { DatabaseModule } from "./modules/database/database.module";
+import { EmailModule } from "./modules/email/email.module";
 import { RoleManagementModule } from "./role-management/role-management.module";
 import { UploadsModule } from "./uploads/uploads.module";
 import { UserModule } from "./user/user.module";
@@ -29,6 +32,8 @@ import { UserModule } from "./user/user.module";
     ScheduleModule.forRoot(),
     MailerModule.forRoot(transportConfig),
     CronModule,
+    BullModule.forRoot(bullConfig),
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
