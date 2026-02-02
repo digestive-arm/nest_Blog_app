@@ -8,6 +8,7 @@ import { CurrentUser } from "src/modules/decorators/get-current-user.decorator";
 import { TransformWith } from "src/modules/decorators/response-transformer.decorator";
 import { AuthGuard } from "src/modules/guards/auth.guard";
 import { RolesGuard } from "src/modules/guards/role.guard";
+import { ApiSwaggerResponse } from "src/modules/swagger/swagger.decorator";
 import { USER_ROLES } from "src/user/user-types";
 
 import { AuthorDashboardDataResponse } from "./author-dashboard.response";
@@ -20,6 +21,7 @@ export class AuthorDashboardController {
   ) {}
 
   @Get()
+  @ApiSwaggerResponse(AuthorDashboardDataResponse)
   @TransformWith(AuthorDashboardDataResponse)
   @HttpCode(StatusCodes.OK)
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
