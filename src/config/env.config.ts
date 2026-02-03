@@ -23,4 +23,6 @@ export const secretConfig = {
   mailerServicePassword: getOsEnv("MAILER_SERVICE_PASSWORD"),
   redisHost: getOsEnv("REDIS_HOST"),
   redisPort: getOsEnv("REDIS_PORT"),
+  redisTTL: getOsEnv("REDIS_TTL"),
+  redisUrl: getOsEnv("REDIS_URL"),
 };

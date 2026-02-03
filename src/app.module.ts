@@ -1,4 +1,5 @@
 import { BullModule } from "@nestjs/bull";
+import { CacheModule } from "@nestjs/cache-manager";
 import { Module } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
 
@@ -11,6 +12,7 @@ import { BlogpostModule } from "./blogpost/blogpost.module";
 import { CategoryModule } from "./category/category.module";
 import { CommentsModule } from "./comments/comments.module";
 import { bullConfig } from "./config/bull.config";
+import { redisConfig } from "./config/redis.config";
 import transportConfig from "./config/transport.config";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { CronModule } from "./modules/cron/cron.module";
@@ -22,6 +24,7 @@ import { UserModule } from "./user/user.module";
 
 @Module({
   imports: [
+    CacheModule.registerAsync(redisConfig),
     AuthModule,
     UserModule,
     DatabaseModule,
