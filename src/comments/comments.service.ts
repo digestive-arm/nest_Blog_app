@@ -1,5 +1,7 @@
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -30,6 +32,7 @@ import { COMMENT_CONSTANTS } from "./comments.constants";
 @Injectable()
 export class CommentsService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectRepository(CommentEntity)
     private readonly commentRepository: Repository<CommentEntity>,
     @InjectRepository(BlogpostEntity)
@@ -66,18 +69,22 @@ export class CommentsService {
     return result;
   }
 
-  async findOne(id: string): Promise<CommentEntity | null> {
-    const existingComment = await findExistingEntity(this.commentRepository, {
-      id,
-    });
-    if (!existingComment) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
-    }
+  async findOne(id: string): Promise<CommentEntity> {
+    const cacheKey = `comment:${id}`;
+    const cached = await this.cache.get<CommentEntity>(cacheKey);
+    if (cached) return cached;
+
     const comment = await this.commentRepository
       .createQueryBuilder("comment")
       .select(COMMENT_CONSTANTS.GET_ONE_COMMENT_SELECT)
       .where("comment.id =  :id", { id })
       .getOne();
+
+    if (!comment) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
+    }
+
+    await this.cache.set(cacheKey, comment, 5000);
     return comment;
   }
 
@@ -86,6 +93,7 @@ export class CommentsService {
     commentId: string,
     updateCommentInput: UpdateCommentInput,
   ): Promise<void> {
+    const cacheKey = `comment:${commentId}`;
     const comment = await this.commentRepository
       .createQueryBuilder("comment")
       .leftJoinAndSelect("comment.blogPost", "blogpost")
@@ -115,11 +123,12 @@ export class CommentsService {
         ? COMMENT_STATUS.APPROVED
         : COMMENT_STATUS.REJECTED;
     }
-
+    await this.cache.del(cacheKey);
     await this.commentRepository.save(comment);
   }
 
   async remove(id: string, user: TokenPayload): Promise<void> {
+    const cacheKey = `comment:${id}`;
     const comment = await this.commentRepository
       .createQueryBuilder("comment")
       .where("comment.id = :id", {
@@ -136,6 +145,7 @@ export class CommentsService {
     if (!isOwner && !isAdmin)
       throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
 
+    await this.cache.del(cacheKey);
     await this.commentRepository.softRemove(comment);
   }
 }

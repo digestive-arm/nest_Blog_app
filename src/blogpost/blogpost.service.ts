@@ -1,6 +1,8 @@
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
 import {
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -41,6 +43,7 @@ import {
 @Injectable()
 export class BlogpostService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly attachmentService: UploadsService,
     private readonly dataSource: DataSource,
     @InjectRepository(BlogpostEntity)
@@ -99,6 +102,17 @@ export class BlogpostService {
     { page, limit, isPagination }: PaginationInput,
     q?: string,
   ): Promise<PaginationMeta<BlogpostEntity>> {
+    const cacheKey =
+      `blogPosts:v1:` +
+      `page=${page}:` +
+      `limit=${limit}:` +
+      `pagination=${isPagination}:` +
+      `q=${q ?? "none"}`;
+
+    const cached =
+      await this.cache.get<PaginationMeta<BlogpostEntity>>(cacheKey);
+    if (cached) return cached;
+
     const qb = this.blogPostRepository
       .createQueryBuilder("post")
       .leftJoin("post.attachments", "attachment")
@@ -118,11 +132,15 @@ export class BlogpostService {
     }
     const [items, total] = await qb.getManyAndCount();
     const result = getPaginationMeta({ items, page, limit, total });
-
+    await this.cache.set(cacheKey, result, 5000);
     return result;
   }
 
   async findOne(slug: string): Promise<BlogpostEntity> {
+    const cacheKey = `post:${slug}`;
+    const cached = await this.cache.get<BlogpostEntity>(cacheKey);
+    if (cached) return cached;
+
     const result = await this.blogPostRepository
       .createQueryBuilder("post")
       .leftJoin("post.attachments", "attachment")
@@ -135,7 +153,7 @@ export class BlogpostService {
     if (!result) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
-
+    await this.cache.set(cacheKey, result, 5000);
     return result;
   }
 
@@ -236,6 +254,13 @@ export class BlogpostService {
     id: string,
     { isPagination, page, limit, isPending }: GetCommentsOnPostInput,
   ): Promise<PaginationMeta<CommentEntity>> {
+    const cacheKey = `post:${id}:comments:page=${page}:limit=${limit}:isPagination=${isPagination}`;
+    const cached =
+      await this.cache.get<PaginationMeta<CommentEntity>>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const existingPost = await findExistingEntity(this.blogPostRepository, {
       id,
     });
@@ -267,6 +292,7 @@ export class BlogpostService {
 
     const [items, total] = await qb.getManyAndCount();
     const result = getPaginationMeta({ items, page, limit, total });
+    await this.cache.set(cacheKey, result, 5000);
     return result;
   }
 
