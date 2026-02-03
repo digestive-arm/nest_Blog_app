@@ -14,3 +14,14 @@ export interface AuthorDashboardData {
   recentPosts: BlogpostEntity | null;
   recentComments: CommentEntity | null;
 }
+
+export interface AuthorCommentStats {
+  totalComments: number;
+  pendingComments: number;
+}
+
+export interface AuthorPostStats {
+  totalPosts: number;
+  publishedPosts: number;
+  draftPosts: number;
+}

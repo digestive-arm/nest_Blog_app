@@ -1,24 +1,20 @@
+/* eslint-disable @cspell/spellchecker */
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { Repository } from "typeorm";
 
 import { type TokenPayload } from "src/auth/auth-types";
-import { BLOG_POST_STATUS } from "src/blogpost/blogpost-types";
-import { COMMENT_STATUS } from "src/comments/comments-types";
 import { SORT_ORDER, SORTBY } from "src/common/enums";
 import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
 import { CommentEntity } from "src/modules/database/entities/comment.entity";
 
+import { AUTHOR_DASHBOARD_CONSTANTS } from "./author-dashboard.constants";
 import {
-  RECENT_AUTHOR_COMMENT_LIMIT,
-  RECENT_AUTHOR_COMMENT_SELECT,
-  RECENT_AUTHOR_POST_LIMIT,
-  RECENT_AUTHOR_POST_SELECT,
-} from "./author-dashboard.constants";
-import {
+  AuthorCommentStats,
   AuthorDashboardData,
   AuthorDashboardStats,
+  AuthorPostStats,
 } from "./interfaces/author-dashboard.interface";
 
 @Injectable()
@@ -47,48 +43,10 @@ export class AuthorDashboardService {
   }
 
   async getAuthorStats(authorId: string): Promise<AuthorDashboardStats> {
-    const getTotalPostPromise = this.blogPostRepository
-      .createQueryBuilder("post")
-      .where("post.authorId = :authorId", { authorId })
-      .getCount();
-
-    const publishedPostPromise = this.blogPostRepository
-      .createQueryBuilder("post")
-      .where("post.authorId = :authorId", { authorId })
-      .andWhere("post.status = :status", { status: BLOG_POST_STATUS.PUBLISHED })
-      .getCount();
-
-    const draftPostPromise = this.blogPostRepository
-      .createQueryBuilder("post")
-      .where("post.authorId = :authorId", { authorId })
-      .andWhere("post.status = :status", { status: BLOG_POST_STATUS.DRAFT })
-      .getCount();
-
-    const totalCommentsPromise = this.blogPostRepository
-      .createQueryBuilder("post")
-      .leftJoinAndSelect("post.comments", "comment")
-      .where("post.authorId = :authorId", { authorId })
-      .getCount();
-
-    const pendingCommentsPromise = this.blogPostRepository
-      .createQueryBuilder("post")
-      .leftJoinAndSelect("post.comments", "comment")
-      .where("post.authorId = :authorId", { authorId })
-      .andWhere("comment.status = :status", { status: COMMENT_STATUS.PENDING })
-      .getCount();
-    const [
-      totalPosts,
-      publishedPosts,
-      draftPosts,
-      totalComments,
-      pendingComments,
-    ] = await Promise.all([
-      getTotalPostPromise,
-      publishedPostPromise,
-      draftPostPromise,
-      totalCommentsPromise,
-      pendingCommentsPromise,
-    ]);
+    const { totalPosts, publishedPosts, draftPosts } =
+      await this.getPostStats(authorId);
+    const { totalComments, pendingComments } =
+      await this.getCommentStats(authorId);
     return {
       totalPosts,
       publishedPosts,
@@ -102,8 +60,10 @@ export class AuthorDashboardService {
       .createQueryBuilder("post")
       .where("post.authorId = :authorId", { authorId })
       .leftJoinAndSelect("post.category", "cat")
-      .select(RECENT_AUTHOR_POST_SELECT)
-      .take(RECENT_AUTHOR_POST_LIMIT)
+      .select(AUTHOR_DASHBOARD_CONSTANTS.AUTHOR_DASHBOARD_RECENT_POST_SELECT)
+      .take(
+        AUTHOR_DASHBOARD_CONSTANTS.AUTHOR_DASHBOARD_RECENT_POST_SELECT_LIMIT,
+      )
       .orderBy(`post.${SORTBY.CREATED_AT}`, SORT_ORDER.ASC)
       .getOne();
 
@@ -114,11 +74,42 @@ export class AuthorDashboardService {
       .createQueryBuilder("comment")
       .where("comment.authorId = :authorId", { authorId })
       .leftJoinAndSelect("comment.blogPost", "post")
-      .select(RECENT_AUTHOR_COMMENT_SELECT)
-      .take(RECENT_AUTHOR_COMMENT_LIMIT)
+      .select(AUTHOR_DASHBOARD_CONSTANTS.AUTHOR_DASHBOARD_RECENT_COMMENT_SELECT)
+      .take(
+        AUTHOR_DASHBOARD_CONSTANTS.AUTHOR_DASHBOARD_RECENT_COMMENT_SELECT_LIMIT,
+      )
       .orderBy(`comment.${SORTBY.CREATED_AT}`, SORT_ORDER.ASC)
       .getOne();
-
     return recentComment;
+  }
+
+  async getCommentStats(authorId: string): Promise<AuthorCommentStats> {
+    const [commentStats] = await this.blogPostRepository
+      .createQueryBuilder("post")
+      .leftJoinAndSelect("post.comments", "comment")
+      .where("post.authorId = :authorId", { authorId })
+      .select(AUTHOR_DASHBOARD_CONSTANTS.AUTHOR_COMMENT_STATS_SELECT)
+      .getRawMany();
+    const result = {
+      totalComments: Number(commentStats.totalcomments),
+      pendingComments: Number(commentStats.pendingcomments),
+    };
+    return result;
+  }
+
+  async getPostStats(authorId: string): Promise<AuthorPostStats> {
+    const [postStats] = await this.blogPostRepository
+      .createQueryBuilder("post")
+      .where("post.authorId = :authorId", { authorId })
+      .select(AUTHOR_DASHBOARD_CONSTANTS.AUTHOR_POST_STATS)
+      .getRawMany();
+
+    const result = {
+      totalPosts: Number(postStats.totalposts),
+      publishedPosts: Number(postStats.publishedposts),
+      draftPosts: Number(postStats.draftposts),
+    };
+
+    return result;
   }
 }

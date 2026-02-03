@@ -13,6 +13,7 @@ import { USER_ROLES } from "src/user/user-types";
 
 import { AuthorDashboardDataResponse } from "./author-dashboard.response";
 import { AuthorDashboardService } from "./author-dashboard.service";
+import { AuthorDashboardData } from "./interfaces/author-dashboard.interface";
 
 @Controller(AUTHOR_DASHBOARD_ROUTE.AUTHOR_DASHBOARD)
 export class AuthorDashboardController {
@@ -27,7 +28,7 @@ export class AuthorDashboardController {
   @UseGuards(AuthGuard, RolesGuard(USER_ROLES.AUTHOR))
   async getAuthorDashboard(
     @CurrentUser() user: TokenPayload,
-  ): Promise<unknown> {
+  ): Promise<AuthorDashboardData> {
     return await this.authorDashboardService.getAuthorDashboard(user);
   }
 }
