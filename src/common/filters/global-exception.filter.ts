@@ -2,12 +2,12 @@ import {
   ExceptionFilter,
   Catch,
   ArgumentsHost,
-  Logger,
   HttpException,
 } from "@nestjs/common";
 
 import { Response } from "express";
 
+import { logger } from "src/modules/logger/logger.service";
 import responseUtils from "src/utils/response.utils";
 
 @Catch()
@@ -15,10 +15,10 @@ export class AllExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const logger = new Logger();
+
     // log only non-HttpExceptions
     if (!(exception instanceof HttpException)) {
-      logger.error(exception);
+      logger.error("EXCEPTION FILTER:: Exception:", exception);
     }
 
     responseUtils.error({ res: response, error: exception });
