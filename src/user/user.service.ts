@@ -26,6 +26,7 @@ import { findExistingEntity } from "src/utils/db.utils";
 import { UserEntity } from "../modules/database/entities/user.entity";
 
 import { UpdateUserParams } from "./interfaces/user.interface";
+import { userByIdCacheKey, userListCacheKey } from "./user/user.cache-keys";
 
 @Injectable()
 export class UserService {
@@ -40,7 +41,7 @@ export class UserService {
     limit,
     isPagination,
   }: PaginationInput): Promise<PaginationMeta<UserEntity>> {
-    const cacheKey = `users:v1:page=${page}:limit=${limit}:pagination=${isPagination}`;
+    const cacheKey = userListCacheKey({ page, limit, isPagination });
     const cached = await this.cache.get<PaginationMeta<UserEntity>>(cacheKey);
     if (cached) return cached;
 
@@ -61,7 +62,7 @@ export class UserService {
   }
 
   async findOne(id: string): Promise<UserEntity> {
-    const cacheKey = `user:id:${id}`;
+    const cacheKey = userByIdCacheKey(id);
     const cached = await this.cache.get<UserEntity>(cacheKey);
     if (cached) return cached;
 
@@ -91,7 +92,8 @@ export class UserService {
       throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
     }
 
-    const cacheKey = `user:id:${id}`;
+    const cacheKey = userByIdCacheKey(id);
+
     if (updateUserParams.userName) {
       const existing = await findExistingEntity(this.userRepository, {
         userName: updateUserParams.userName,
@@ -115,7 +117,7 @@ export class UserService {
   }
 
   async remove(id: string): Promise<void> {
-    const cacheKey = `user:id:${id}`;
+    const cacheKey = userByIdCacheKey(id);
     const user = await this.userRepository
       .createQueryBuilder("user")
       .where("user.id = :id", {
