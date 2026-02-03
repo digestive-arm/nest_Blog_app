@@ -1,6 +1,8 @@
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
 import {
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -27,10 +29,8 @@ import { ProcessRequestInput } from "./interfaces/role-management.interface";
 
 @Injectable()
 export class RoleManagementService {
-  requestUpdgrade(role: USER_ROLES, userId: string) {
-    throw new Error('Method not implemented.');
-  }
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly dataSource: DataSource,
     @InjectRepository(RoleApproval)
     private readonly roleApprovalRepository: Repository<RoleApproval>,
@@ -75,6 +75,9 @@ export class RoleManagementService {
 
   // get my requests
   async getMyRequests(id: string): Promise<Partial<RoleApproval[]>> {
+    const cacheKey = `roleRequest:user:${id}`;
+    const cached = await this.cache.get<Partial<RoleApproval[]>>(cacheKey);
+    if (cached) return cached;
     const user = await findExistingEntity(this.userRepository, {
       id,
     });
@@ -89,7 +92,7 @@ export class RoleManagementService {
         id,
       })
       .getMany();
-
+    await this.cache.set(cacheKey, result, 5000);
     return result;
   }
 
@@ -99,6 +102,10 @@ export class RoleManagementService {
     limit,
     isPagination,
   }: ProcessRequestInput): Promise<PaginationMeta<RoleApproval>> {
+    const cacheKey = `roleRequest:${page}:${limit}:${isPagination}`;
+    const cached = await this.cache.get<PaginationMeta<RoleApproval>>(cacheKey);
+    if (cached) return cached;
+
     const qb = this.roleApprovalRepository
       .createQueryBuilder("role")
       .where("role.status = :status", {
@@ -112,14 +119,16 @@ export class RoleManagementService {
     const [items, total] = await qb.getManyAndCount();
 
     const result = getPaginationMeta({ items, total, page, limit });
+    await this.cache.set(cacheKey, result, 5000);
     return result;
   }
 
   // approve / reject request
   async processRequest(
     isApproved: boolean,
-    roleApprovalRequestId: string,
+    roleRequestId: string,
   ): Promise<void> {
+    const cacheKey = `roleRequest:${roleRequestId}`;
     await this.dataSource.transaction(async (manager) => {
       const transactionalRoleRepo = manager.withRepository(
         this.roleApprovalRepository,
@@ -128,8 +137,8 @@ export class RoleManagementService {
 
       const requestExists = await transactionalRoleRepo
         .createQueryBuilder("role")
-        .where("role.id = :roleApprovalRequestId", {
-          roleApprovalRequestId,
+        .where("role.id = :roleRequestId", {
+          roleRequestId,
         })
         .getOne();
 
@@ -153,7 +162,7 @@ export class RoleManagementService {
       requestExists.status = isApproved
         ? RoleApprovalStatus.APPROVED
         : RoleApprovalStatus.REJECTED;
-
+      await this.cache.del(cacheKey);
       await transactionalRoleRepo.save(requestExists);
     });
   }

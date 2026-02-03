@@ -1,6 +1,8 @@
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
 import {
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -30,6 +32,7 @@ export class UserService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
   ) {}
 
   async findAll({
@@ -37,6 +40,10 @@ export class UserService {
     limit,
     isPagination,
   }: PaginationInput): Promise<PaginationMeta<UserEntity>> {
+    const cacheKey = `users:v1:page=${page}:limit=${limit}:pagination=${isPagination}`;
+    const cached = await this.cache.get<PaginationMeta<UserEntity>>(cacheKey);
+    if (cached) return cached;
+
     const queryBuilder = this.userRepository
       .createQueryBuilder("user")
       .select(USER_CONSTANTS.USER_SELECT_FIELDS)
@@ -49,10 +56,15 @@ export class UserService {
     const [items, total] = await queryBuilder.getManyAndCount();
     const result = getPaginationMeta({ items, page, limit, total });
 
+    await this.cache.set(cacheKey, result);
     return result;
   }
 
   async findOne(id: string): Promise<UserEntity> {
+    const cacheKey = `user:id:${id}`;
+    const cached = await this.cache.get<UserEntity>(cacheKey);
+    if (cached) return cached;
+
     const user = await this.userRepository
       .createQueryBuilder("user")
       .select(USER_CONSTANTS.USER_SELECT_FIELDS)
@@ -64,6 +76,8 @@ export class UserService {
     if (!user) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
+
+    await this.cache.set(cacheKey, user);
 
     return user;
   }
@@ -77,6 +91,7 @@ export class UserService {
       throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
     }
 
+    const cacheKey = `user:id:${id}`;
     if (updateUserParams.userName) {
       const existing = await findExistingEntity(this.userRepository, {
         userName: updateUserParams.userName,
@@ -96,9 +111,11 @@ export class UserService {
     }
 
     await this.userRepository.save(result);
+    await this.cache.del(cacheKey);
   }
 
   async remove(id: string): Promise<void> {
+    const cacheKey = `user:id:${id}`;
     const user = await this.userRepository
       .createQueryBuilder("user")
       .where("user.id = :id", {
@@ -111,5 +128,6 @@ export class UserService {
     }
 
     await this.userRepository.softRemove(user);
+    await this.cache.del(cacheKey);
   }
 }

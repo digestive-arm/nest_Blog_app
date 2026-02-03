@@ -1,5 +1,7 @@
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -28,6 +30,7 @@ import {
 @Injectable()
 export class CategoryService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectRepository(CategoryEntity)
     private readonly categoryRepository: Repository<CategoryEntity>,
   ) {}
@@ -57,6 +60,10 @@ export class CategoryService {
     limit,
     isPagination,
   }: PaginationInput): Promise<PaginationMeta<CategoryEntity>> {
+    const cacheKey = `category:page=${page}:limit=${limit}:isPagination=${isPagination}`;
+    const cached =
+      await this.cache.get<PaginationMeta<CategoryEntity>>(cacheKey);
+    if (cached) return cached;
     const qb = this.categoryRepository.createQueryBuilder("category");
     qb.select(CATEGORY_CONSTANTS.GET_ALL_CATEGORY_SELECT).where(
       "category.isActive = :isActive",
@@ -71,25 +78,30 @@ export class CategoryService {
     }
     const [items, total] = await qb.getManyAndCount();
     const result = getPaginationMeta({ items, total, page, limit });
+
+    await this.cache.set(cacheKey, result, 5000);
     return result;
   }
 
   async findOne(id: string): Promise<CategoryEntity | null> {
-    const qb = this.categoryRepository.createQueryBuilder("category");
-    qb.select(CATEGORY_CONSTANTS.CATEGORY_SELECT).where(
-      "category.id = :id AND category.isActive = :isActive",
-      {
+    const cacheKey = `category:${id}`;
+    const cached = await this.cache.get<CategoryEntity>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.categoryRepository
+      .createQueryBuilder("category")
+      .select(CATEGORY_CONSTANTS.CATEGORY_SELECT)
+      .where("category.id = :id AND category.isActive = :isActive", {
         id,
         isActive: true,
-      },
-    );
-
-    const result = await qb.getOne();
+      })
+      .getOne();
 
     if (!result) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
+    await this.cache.set(cacheKey, result, 5000);
     return result;
   }
 
@@ -97,6 +109,7 @@ export class CategoryService {
     id: string,
     updateCategoryInput: UpdateCategoryInput,
   ): Promise<void> {
+    const cacheKey = `category:${id}`;
     const category = await this.categoryRepository.findOne({
       where: { id },
     });
@@ -128,11 +141,12 @@ export class CategoryService {
     if (updateCategoryInput.isActive !== undefined) {
       category.isActive = updateCategoryInput.isActive;
     }
-
+    await this.cache.del(cacheKey);
     await this.categoryRepository.save(category);
   }
 
   async remove(id: string): Promise<void> {
+    const cacheKey = `category:${id}`;
     const category = await this.categoryRepository.findOne({
       where: {
         id,
@@ -142,7 +156,7 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
-
+    await this.cache.del(cacheKey);
     await this.categoryRepository.softRemove(category);
   }
 }
