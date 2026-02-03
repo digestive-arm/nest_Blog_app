@@ -1,21 +1,24 @@
+/* eslint-disable @cspell/spellchecker */
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { Repository } from "typeorm";
 
 import { BLOG_POST_STATUS } from "src/blogpost/blogpost-types";
-import { COMMENT_STATUS } from "src/comments/comments-types";
 import { SORT_ORDER, SORTBY } from "src/common/enums";
 import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
 import { CommentEntity } from "src/modules/database/entities/comment.entity";
 import { UserEntity } from "src/modules/database/entities/user.entity";
-import { USER_ROLES } from "src/user/user-types";
 
+import { AUTHOR_DASHBOARD_CONSTANTS } from "./admin-dashboar.constants";
 import {
   AdminDashboardData,
   AdminDashboardStats,
   AdminPostByCategory,
   AdminRecentActivity,
+  CommentStats,
+  PostStats,
+  UserStats,
 } from "./admin.interface";
 
 @Injectable()
@@ -35,7 +38,6 @@ export class AdminDashboardService {
       this.findRecent(),
       this.getPostByCategory(),
     ]);
-
     return {
       stats,
       recentActivity,
@@ -44,70 +46,39 @@ export class AdminDashboardService {
   }
 
   async getPostByCategory(): Promise<AdminPostByCategory[]> {
-    return await this.blogPostRepository
+    const qb = this.blogPostRepository
       .createQueryBuilder("post")
       .leftJoin("post.category", "cat")
-      .where("post.status = :status", { status: BLOG_POST_STATUS.PUBLISHED })
-      .select("cat.id ", "categoryId")
-      .addSelect("COALESCE(cat.name, 'Uncategorized')", "categoryName")
-      .addSelect("COUNT(post.id)", "postCount")
-      .groupBy("cat.id")
-      .addGroupBy("COALESCE(cat.name, 'Uncategorized')")
-      .getRawMany();
+      .where("post.status = :status", {
+        status: BLOG_POST_STATUS.PUBLISHED,
+      })
+      .select([]); // to remove implicit post.*
+
+    AUTHOR_DASHBOARD_CONSTANTS.BLOG_POST_CATEGORY_STATS_SELECT.forEach(
+      ({ selection, alias }) => {
+        qb.addSelect(selection, alias);
+      },
+    );
+
+    AUTHOR_DASHBOARD_CONSTANTS.BLOG_POST_CATEGORY_STATS_GROUP_BY.forEach(
+      (groupBy) => {
+        qb.addGroupBy(groupBy);
+      },
+    );
+
+    return qb.getRawMany();
   }
 
   async getAdminStats(): Promise<AdminDashboardStats> {
-    const totalUserPromise = this.userRepository
-      .createQueryBuilder("user")
-      .getCount();
-    const totalAuthorPromise = this.userRepository
-      .createQueryBuilder("user")
-      .where("user.role = :role", { role: USER_ROLES.AUTHOR })
-      .getCount();
-
-    const totalPostPromise = this.blogPostRepository
-      .createQueryBuilder("post")
-      .where("post.status = :status", { status: BLOG_POST_STATUS.PUBLISHED })
-      .getCount();
-
-    const draftPostPromise = this.blogPostRepository
-      .createQueryBuilder("post")
-      .andWhere("post.status = :status", { status: BLOG_POST_STATUS.DRAFT })
-      .getCount();
-
-    const totalCommentsPromise = this.blogPostRepository
-      .createQueryBuilder("post")
-      .leftJoinAndSelect("post.comments", "comment")
-      .where("comment.status = :status", { status: COMMENT_STATUS.APPROVED })
-      .getCount();
-
-    const pendingCommentsPromise = this.blogPostRepository
-      .createQueryBuilder("post")
-      .leftJoinAndSelect("post.comments", "comment")
-      .andWhere("comment.status = :status", { status: COMMENT_STATUS.PENDING })
-      .getCount();
-    const [
-      totalUsers,
-      totalAuthors,
-      totalPosts,
-      totalComments,
-      pendingPosts,
-      pendingComments,
-    ] = await Promise.all([
-      totalUserPromise,
-      totalAuthorPromise,
-      totalPostPromise,
-      totalCommentsPromise,
-      draftPostPromise,
-      pendingCommentsPromise,
-    ]);
-
+    const { totalUsers, totalAuthors } = await this.getUserStats();
+    const { totalPosts, pendingPosts } = await this.getPostsStats();
+    const { totalComments, pendingComments } = await this.getCommentStats();
     return {
       totalUsers,
       totalAuthors,
       totalPosts,
-      totalComments,
       pendingPosts,
+      totalComments,
       pendingComments,
     };
   }
@@ -115,34 +86,56 @@ export class AdminDashboardService {
     const recentPost = await this.blogPostRepository
       .createQueryBuilder("post")
       .leftJoinAndSelect("post.category", "cat")
-      .select([
-        "post.id",
-        "post.createdAt",
-        "post.title",
-        "post.content",
-        "post.slug",
-        "cat.id",
-        "cat.name",
-      ])
-      .take(1)
+      .select(AUTHOR_DASHBOARD_CONSTANTS.RECENT_POST_SELECT)
+      .take(AUTHOR_DASHBOARD_CONSTANTS.RECENT_POST_SELECT_LIMIT)
       .orderBy(`post.${SORTBY.CREATED_AT}`, SORT_ORDER.ASC)
       .getOne();
 
     const recentComment = await this.commentRepository
       .createQueryBuilder("comment")
       .leftJoinAndSelect("comment.blogPost", "post")
-      .select([
-        "comment.createdAt",
-        "comment.content",
-        "comment.status",
-        "comment.id",
-        "post.id",
-        "post.title",
-      ])
-      .take(1)
+      .select(AUTHOR_DASHBOARD_CONSTANTS.RECENT_COMMENT_SELECT)
+      .take(AUTHOR_DASHBOARD_CONSTANTS.RECENT_COMMENT_SELECT_LIMIT)
       .orderBy(`comment.${SORTBY.CREATED_AT}`, SORT_ORDER.ASC)
       .getOne();
 
     return { recentPost, recentComment };
+  }
+
+  async getUserStats(): Promise<UserStats> {
+    const [userStats] = await this.userRepository
+      .createQueryBuilder("user")
+      .select(AUTHOR_DASHBOARD_CONSTANTS.USER_STATS_SELECT)
+      .getRawMany();
+    const result = {
+      totalUsers: Number(userStats.totalusers),
+      totalAuthors: Number(userStats.totalauthors),
+    };
+    return result;
+  }
+
+  async getPostsStats(): Promise<PostStats> {
+    const [postStats] = await this.blogPostRepository
+      .createQueryBuilder("post")
+      .select(AUTHOR_DASHBOARD_CONSTANTS.POST_STATS_SELECT)
+      .getRawMany();
+    const result = {
+      totalPosts: Number(postStats.totalposts),
+      pendingPosts: Number(postStats.pendingposts),
+    };
+    return result;
+  }
+
+  async getCommentStats(): Promise<CommentStats> {
+    const [commentStats] = await this.commentRepository
+      .createQueryBuilder("comment")
+      .select(AUTHOR_DASHBOARD_CONSTANTS.COMMENT_STATS_SELECT)
+      .getRawMany();
+
+    const result = {
+      totalComments: Number(commentStats.totalcomments),
+      pendingComments: Number(commentStats.pendingcomments),
+    };
+    return result;
   }
 }

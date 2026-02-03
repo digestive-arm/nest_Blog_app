@@ -44,3 +44,15 @@ export interface AdminDashboardData {
   recentActivity: AdminRecentActivity;
   postByCategory: AdminPostByCategory[];
 }
+export interface CommentStats {
+  totalComments: number;
+  pendingComments: number;
+}
+export interface PostStats {
+  totalPosts: number;
+  pendingPosts: number;
+}
+export interface UserStats {
+  totalUsers: number;
+  totalAuthors: number;
+}
