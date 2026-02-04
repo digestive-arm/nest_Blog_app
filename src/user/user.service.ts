@@ -26,7 +26,11 @@ import { findExistingEntity } from "src/utils/db.utils";
 import { UserEntity } from "../modules/database/entities/user.entity";
 
 import { UpdateUserParams } from "./interfaces/user.interface";
-import { userByIdCacheKey, userListCacheKey } from "./user/user.cache-keys";
+import {
+  invalidateUserCacheKeyById,
+  userByIdCacheKey,
+  userListCacheKey,
+} from "./user.cache-keys";
 
 @Injectable()
 export class UserService {
@@ -79,7 +83,6 @@ export class UserService {
     }
 
     await this.cache.set(cacheKey, user);
-
     return user;
   }
 
@@ -91,8 +94,6 @@ export class UserService {
     if (userId !== id) {
       throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
     }
-
-    const cacheKey = userByIdCacheKey(id);
 
     if (updateUserParams.userName) {
       const existing = await findExistingEntity(this.userRepository, {
@@ -113,11 +114,10 @@ export class UserService {
     }
 
     await this.userRepository.save(result);
-    await this.cache.del(cacheKey);
+    await invalidateUserCacheKeyById(this.cache, id);
   }
 
   async remove(id: string): Promise<void> {
-    const cacheKey = userByIdCacheKey(id);
     const user = await this.userRepository
       .createQueryBuilder("user")
       .where("user.id = :id", {
@@ -130,6 +130,6 @@ export class UserService {
     }
 
     await this.userRepository.softRemove(user);
-    await this.cache.del(cacheKey);
+    await invalidateUserCacheKeyById(this.cache, id);
   }
 }

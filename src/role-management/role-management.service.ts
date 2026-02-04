@@ -26,6 +26,11 @@ import { USER_ROLES } from "src/user/user-types";
 import { findExistingEntity } from "src/utils/db.utils";
 
 import { ProcessRequestInput } from "./interfaces/role-management.interface";
+import {
+  invalidateRoleRequestCacheKey,
+  pendingRoleRequestCacheKey,
+  userRoleRequestsCacheKey,
+} from "./role-management.cache-keys";
 
 @Injectable()
 export class RoleManagementService {
@@ -75,7 +80,7 @@ export class RoleManagementService {
 
   // get my requests
   async getMyRequests(id: string): Promise<Partial<RoleApproval[]>> {
-    const cacheKey = `roleRequest:user:${id}`;
+    const cacheKey = userRoleRequestsCacheKey(id);
     const cached = await this.cache.get<Partial<RoleApproval[]>>(cacheKey);
     if (cached) return cached;
     const user = await findExistingEntity(this.userRepository, {
@@ -92,7 +97,7 @@ export class RoleManagementService {
         id,
       })
       .getMany();
-    await this.cache.set(cacheKey, result, 5000);
+    await this.cache.set(cacheKey, result);
     return result;
   }
 
@@ -102,7 +107,7 @@ export class RoleManagementService {
     limit,
     isPagination,
   }: ProcessRequestInput): Promise<PaginationMeta<RoleApproval>> {
-    const cacheKey = `roleRequest:${page}:${limit}:${isPagination}`;
+    const cacheKey = pendingRoleRequestCacheKey({ page, limit, isPagination });
     const cached = await this.cache.get<PaginationMeta<RoleApproval>>(cacheKey);
     if (cached) return cached;
 
@@ -119,7 +124,7 @@ export class RoleManagementService {
     const [items, total] = await qb.getManyAndCount();
 
     const result = getPaginationMeta({ items, total, page, limit });
-    await this.cache.set(cacheKey, result, 5000);
+    await this.cache.set(cacheKey, result);
     return result;
   }
 
@@ -128,7 +133,6 @@ export class RoleManagementService {
     isApproved: boolean,
     roleRequestId: string,
   ): Promise<void> {
-    const cacheKey = `roleRequest:${roleRequestId}`;
     await this.dataSource.transaction(async (manager) => {
       const transactionalRoleRepo = manager.withRepository(
         this.roleApprovalRepository,
@@ -162,7 +166,7 @@ export class RoleManagementService {
       requestExists.status = isApproved
         ? RoleApprovalStatus.APPROVED
         : RoleApprovalStatus.REJECTED;
-      await this.cache.del(cacheKey);
+      await invalidateRoleRequestCacheKey(this.cache, userId);
       await transactionalRoleRepo.save(requestExists);
     });
   }

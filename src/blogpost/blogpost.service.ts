@@ -33,6 +33,12 @@ import { generateSlug } from "src/utils/blogpost.utils";
 import { findExistingEntity } from "src/utils/db.utils";
 
 import { BLOG_POST_STATUS } from "./blogpost-types";
+import {
+  blogPostBySlugCacheKey,
+  blogPostCommentsCacheKey,
+  blogPostListCacheKey,
+  invalidateBlogPostBySlug,
+} from "./blogpost.cache-keys";
 import { BLOG_POST_CONSTANTS } from "./blogpost.constants";
 import {
   CreateBlogPostInput,
@@ -102,12 +108,12 @@ export class BlogpostService {
     { page, limit, isPagination }: PaginationInput,
     q?: string,
   ): Promise<PaginationMeta<BlogpostEntity>> {
-    const cacheKey =
-      `blogPosts:v1:` +
-      `page=${page}:` +
-      `limit=${limit}:` +
-      `pagination=${isPagination}:` +
-      `q=${q ?? "none"}`;
+    const cacheKey = blogPostListCacheKey({
+      page,
+      limit,
+      isPagination,
+      q,
+    });
 
     const cached =
       await this.cache.get<PaginationMeta<BlogpostEntity>>(cacheKey);
@@ -132,12 +138,13 @@ export class BlogpostService {
     }
     const [items, total] = await qb.getManyAndCount();
     const result = getPaginationMeta({ items, page, limit, total });
-    await this.cache.set(cacheKey, result, 5000);
+
+    await this.cache.set(cacheKey, result);
     return result;
   }
 
   async findOne(slug: string): Promise<BlogpostEntity> {
-    const cacheKey = `post:${slug}`;
+    const cacheKey = blogPostBySlugCacheKey(slug);
     const cached = await this.cache.get<BlogpostEntity>(cacheKey);
     if (cached) return cached;
 
@@ -153,7 +160,7 @@ export class BlogpostService {
     if (!result) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
-    await this.cache.set(cacheKey, result, 5000);
+    await this.cache.set(cacheKey, result);
     return result;
   }
 
@@ -209,7 +216,7 @@ export class BlogpostService {
       }
       blogPost.categoryId = updateBlogPostInput.categoryId;
     }
-
+    await invalidateBlogPostBySlug(this.cache, blogPost.slug);
     await this.blogPostRepository.save(blogPost);
   }
 
@@ -230,6 +237,7 @@ export class BlogpostService {
     if (!isOwner && !isAdmin)
       throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
 
+    await invalidateBlogPostBySlug(this.cache, blogPost.slug);
     await this.blogPostRepository.softRemove(blogPost);
   }
 
@@ -247,6 +255,7 @@ export class BlogpostService {
 
     if (!isOwner) throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
 
+    await invalidateBlogPostBySlug(this.cache, blogPost.slug);
     await this.blogPostRepository.save(blogPost);
   }
 
@@ -254,7 +263,12 @@ export class BlogpostService {
     id: string,
     { isPagination, page, limit, isPending }: GetCommentsOnPostInput,
   ): Promise<PaginationMeta<CommentEntity>> {
-    const cacheKey = `post:${id}:comments:page=${page}:limit=${limit}:isPagination=${isPagination}`;
+    const cacheKey = blogPostCommentsCacheKey({
+      postId: id,
+      page,
+      limit,
+      isPagination,
+    });
     const cached =
       await this.cache.get<PaginationMeta<CommentEntity>>(cacheKey);
     if (cached) {
@@ -292,7 +306,8 @@ export class BlogpostService {
 
     const [items, total] = await qb.getManyAndCount();
     const result = getPaginationMeta({ items, page, limit, total });
-    await this.cache.set(cacheKey, result, 5000);
+
+    await this.cache.set(cacheKey, result);
     return result;
   }
 

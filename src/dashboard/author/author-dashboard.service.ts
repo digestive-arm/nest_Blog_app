@@ -1,5 +1,6 @@
 /* eslint-disable @cspell/spellchecker */
-import { Injectable } from "@nestjs/common";
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
+import { Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { Repository } from "typeorm";
@@ -9,6 +10,12 @@ import { SORT_ORDER, SORTBY } from "src/common/enums";
 import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
 import { CommentEntity } from "src/modules/database/entities/comment.entity";
 
+import {
+  authorDashboardCacheKey,
+  authorDashboardRecentCommentCacheKey,
+  authorDashboardRecentPostCacheKey,
+  authorDashboardStatsCacheKey,
+} from "./author-dashboard.cache-keys";
 import { AUTHOR_DASHBOARD_CONSTANTS } from "./author-dashboard.constants";
 import {
   AuthorCommentStats,
@@ -20,6 +27,7 @@ import {
 @Injectable()
 export class AuthorDashboardService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectRepository(BlogpostEntity)
     private readonly blogPostRepository: Repository<BlogpostEntity>,
     @InjectRepository(CommentEntity)
@@ -29,33 +37,50 @@ export class AuthorDashboardService {
   async getAuthorDashboard({
     id: authorId,
   }: TokenPayload): Promise<AuthorDashboardData> {
+    const cacheKey = authorDashboardCacheKey(authorId);
+    const cached = await this.cache.get<AuthorDashboardData>(cacheKey);
+    if (cached) return cached;
+
     const [stats, recentPosts, recentComments] = await Promise.all([
       this.getAuthorStats(authorId),
-      this.findRecent(authorId),
-      this.findRecentForAuthor(authorId),
+      this.getRecenetPost(authorId),
+      this.getRecentComment(authorId),
     ]);
 
-    return {
+    const result = {
       stats,
       recentPosts,
       recentComments,
     };
+    await this.cache.set(cacheKey, result);
+    return result;
   }
 
   async getAuthorStats(authorId: string): Promise<AuthorDashboardStats> {
+    const cacheKey = authorDashboardStatsCacheKey(authorId);
+    const cached = await this.cache.get<AuthorDashboardStats>(cacheKey);
+    if (cached) return cached;
+
     const { totalPosts, publishedPosts, draftPosts } =
       await this.getPostStats(authorId);
     const { totalComments, pendingComments } =
       await this.getCommentStats(authorId);
-    return {
+    const result = {
       totalPosts,
       publishedPosts,
       draftPosts,
       totalComments,
       pendingComments,
     };
+
+    await this.cache.set(cacheKey, result);
+    return result;
   }
-  async findRecent(authorId: string): Promise<BlogpostEntity | null> {
+  async getRecenetPost(authorId: string): Promise<BlogpostEntity | null> {
+    const cacheKey = authorDashboardRecentPostCacheKey(authorId);
+    const cached = await this.cache.get<BlogpostEntity>(cacheKey);
+    if (cached) return cached;
+
     const recentPost = await this.blogPostRepository
       .createQueryBuilder("post")
       .where("post.authorId = :authorId", { authorId })
@@ -66,10 +91,13 @@ export class AuthorDashboardService {
       )
       .orderBy(`post.${SORTBY.CREATED_AT}`, SORT_ORDER.ASC)
       .getOne();
-
+    await this.cache.set(cacheKey, recentPost);
     return recentPost;
   }
-  async findRecentForAuthor(authorId: string): Promise<CommentEntity | null> {
+  async getRecentComment(authorId: string): Promise<CommentEntity | null> {
+    const cacheKey = authorDashboardRecentCommentCacheKey(authorId);
+    const cached = await this.cache.get<CommentEntity>(cacheKey);
+    if (cached) return cached;
     const recentComment = await this.commentRepository
       .createQueryBuilder("comment")
       .where("comment.authorId = :authorId", { authorId })
@@ -80,6 +108,8 @@ export class AuthorDashboardService {
       )
       .orderBy(`comment.${SORTBY.CREATED_AT}`, SORT_ORDER.ASC)
       .getOne();
+
+    await this.cache.set(cacheKey, recentComment);
     return recentComment;
   }
 
