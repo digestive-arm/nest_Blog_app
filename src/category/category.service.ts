@@ -21,6 +21,11 @@ import { ERROR_MESSAGES } from "src/constants/messages.constants";
 import { CategoryEntity } from "src/modules/database/entities/category.entity";
 import { generateSlug } from "src/utils/blogpost.utils";
 
+import {
+  categoryCacheKeyById,
+  categoryListCacheKey,
+  invalidateCategoryCacheKeyById,
+} from "./category.cache-keys";
 import { CATEGORY_CONSTANTS } from "./category.constants";
 import {
   CreateCategoryInput,
@@ -60,7 +65,7 @@ export class CategoryService {
     limit,
     isPagination,
   }: PaginationInput): Promise<PaginationMeta<CategoryEntity>> {
-    const cacheKey = `category:page=${page}:limit=${limit}:isPagination=${isPagination}`;
+    const cacheKey = categoryListCacheKey({ page, limit, isPagination });
     const cached =
       await this.cache.get<PaginationMeta<CategoryEntity>>(cacheKey);
     if (cached) return cached;
@@ -79,12 +84,12 @@ export class CategoryService {
     const [items, total] = await qb.getManyAndCount();
     const result = getPaginationMeta({ items, total, page, limit });
 
-    await this.cache.set(cacheKey, result, 5000);
+    await this.cache.set(cacheKey, result);
     return result;
   }
 
   async findOne(id: string): Promise<CategoryEntity | null> {
-    const cacheKey = `category:${id}`;
+    const cacheKey = categoryCacheKeyById(id);
     const cached = await this.cache.get<CategoryEntity>(cacheKey);
     if (cached) return cached;
 
@@ -101,7 +106,7 @@ export class CategoryService {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
-    await this.cache.set(cacheKey, result, 5000);
+    await this.cache.set(cacheKey, result);
     return result;
   }
 
@@ -109,7 +114,6 @@ export class CategoryService {
     id: string,
     updateCategoryInput: UpdateCategoryInput,
   ): Promise<void> {
-    const cacheKey = `category:${id}`;
     const category = await this.categoryRepository.findOne({
       where: { id },
     });
@@ -141,12 +145,11 @@ export class CategoryService {
     if (updateCategoryInput.isActive !== undefined) {
       category.isActive = updateCategoryInput.isActive;
     }
-    await this.cache.del(cacheKey);
+    await invalidateCategoryCacheKeyById(this.cache, category.id);
     await this.categoryRepository.save(category);
   }
 
   async remove(id: string): Promise<void> {
-    const cacheKey = `category:${id}`;
     const category = await this.categoryRepository.findOne({
       where: {
         id,
@@ -156,7 +159,7 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
-    await this.cache.del(cacheKey);
+    await invalidateCategoryCacheKeyById(this.cache, category.id);
     await this.categoryRepository.softRemove(category);
   }
 }

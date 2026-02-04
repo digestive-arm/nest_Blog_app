@@ -1,5 +1,6 @@
 /* eslint-disable @cspell/spellchecker */
-import { Injectable } from "@nestjs/common";
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
+import { Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { Repository } from "typeorm";
@@ -11,6 +12,7 @@ import { CommentEntity } from "src/modules/database/entities/comment.entity";
 import { UserEntity } from "src/modules/database/entities/user.entity";
 
 import { AUTHOR_DASHBOARD_CONSTANTS } from "./admin-dashboar.constants";
+import { ADMIN_DASHBOARD_CACHE_KEYS } from "./admin-dashboard.cache-keys";
 import {
   AdminDashboardData,
   AdminDashboardStats,
@@ -24,6 +26,7 @@ import {
 @Injectable()
 export class AdminDashboardService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(BlogpostEntity)
@@ -33,16 +36,24 @@ export class AdminDashboardService {
   ) {}
 
   async getAdminDashboard(): Promise<AdminDashboardData> {
+    const cached = await this.cache.get<AdminDashboardData>(
+      ADMIN_DASHBOARD_CACHE_KEYS.DASHBOARD,
+    );
+
+    if (cached) return cached;
+
     const [stats, recentActivity, postByCategory] = await Promise.all([
       this.getAdminStats(),
       this.findRecent(),
       this.getPostByCategory(),
     ]);
-    return {
+    const result = {
       stats,
       recentActivity,
       postByCategory,
     };
+    await this.cache.set(ADMIN_DASHBOARD_CACHE_KEYS.DASHBOARD, result);
+    return result;
   }
 
   async getPostByCategory(): Promise<AdminPostByCategory[]> {
@@ -70,10 +81,18 @@ export class AdminDashboardService {
   }
 
   async getAdminStats(): Promise<AdminDashboardStats> {
+    const cached = await this.cache.get<AdminDashboardStats>(
+      ADMIN_DASHBOARD_CACHE_KEYS.STATS,
+    );
+
+    if (cached) {
+      return cached;
+    }
+
     const { totalUsers, totalAuthors } = await this.getUserStats();
     const { totalPosts, pendingPosts } = await this.getPostsStats();
     const { totalComments, pendingComments } = await this.getCommentStats();
-    return {
+    const result = {
       totalUsers,
       totalAuthors,
       totalPosts,
@@ -81,8 +100,18 @@ export class AdminDashboardService {
       totalComments,
       pendingComments,
     };
+    await this.cache.set(ADMIN_DASHBOARD_CACHE_KEYS.STATS, result);
+    return result;
   }
   async findRecent(): Promise<AdminRecentActivity> {
+    const cached = await this.cache.get<AdminRecentActivity>(
+      ADMIN_DASHBOARD_CACHE_KEYS.RECENT,
+    );
+
+    if (cached) {
+      return cached;
+    }
+
     const recentPost = await this.blogPostRepository
       .createQueryBuilder("post")
       .leftJoinAndSelect("post.category", "cat")
@@ -98,8 +127,9 @@ export class AdminDashboardService {
       .take(AUTHOR_DASHBOARD_CONSTANTS.RECENT_COMMENT_SELECT_LIMIT)
       .orderBy(`comment.${SORTBY.CREATED_AT}`, SORT_ORDER.ASC)
       .getOne();
-
-    return { recentPost, recentComment };
+    const result = { recentPost, recentComment };
+    await this.cache.set(ADMIN_DASHBOARD_CACHE_KEYS.RECENT, result);
+    return result;
   }
 
   async getUserStats(): Promise<UserStats> {

@@ -11,14 +11,6 @@ import { Repository } from "typeorm";
 
 import { TokenPayload } from "src/auth/auth-types";
 import { BLOG_POST_STATUS } from "src/blogpost/blogpost-types";
-import {
-  getOffset,
-  getPaginationMeta,
-} from "src/common/helper/pagination.helper";
-import {
-  PaginationInput,
-  PaginationMeta,
-} from "src/common/interfaces/pagination.interfaces";
 import { ERROR_MESSAGES } from "src/constants/messages.constants";
 import { BlogpostEntity } from "src/modules/database/entities/blogpost.entity";
 import { CommentEntity } from "src/modules/database/entities/comment.entity";
@@ -27,6 +19,10 @@ import { findExistingEntity } from "src/utils/db.utils";
 
 import { CreateCommentInput, UpdateCommentInput } from "./comment.interface";
 import { COMMENT_STATUS } from "./comments-types";
+import {
+  commentCacheKeyById,
+  invalidateCommentCacheKeyById,
+} from "./comments.cache-keys";
 import { COMMENT_CONSTANTS } from "./comments.constants";
 
 @Injectable()
@@ -51,26 +47,8 @@ export class CommentsService {
     await this.commentRepository.save(comment);
   }
 
-  async findAll({
-    page,
-    limit,
-    isPagination,
-  }: PaginationInput): Promise<PaginationMeta<CommentEntity>> {
-    const qb = this.commentRepository
-      .createQueryBuilder("comment")
-      .select(COMMENT_CONSTANTS.GET_ALL_COMMENTS_SELECT);
-    if (isPagination) {
-      const skip = getOffset(page, limit);
-      qb.skip(skip).limit(limit);
-    }
-    const [items, total] = await qb.getManyAndCount();
-
-    const result = getPaginationMeta({ items, page, limit, total });
-    return result;
-  }
-
   async findOne(id: string): Promise<CommentEntity> {
-    const cacheKey = `comment:${id}`;
+    const cacheKey = commentCacheKeyById(id);
     const cached = await this.cache.get<CommentEntity>(cacheKey);
     if (cached) return cached;
 
@@ -84,7 +62,7 @@ export class CommentsService {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
 
-    await this.cache.set(cacheKey, comment, 5000);
+    await this.cache.set(cacheKey, comment);
     return comment;
   }
 
@@ -93,7 +71,6 @@ export class CommentsService {
     commentId: string,
     updateCommentInput: UpdateCommentInput,
   ): Promise<void> {
-    const cacheKey = `comment:${commentId}`;
     const comment = await this.commentRepository
       .createQueryBuilder("comment")
       .leftJoinAndSelect("comment.blogPost", "blogpost")
@@ -123,12 +100,11 @@ export class CommentsService {
         ? COMMENT_STATUS.APPROVED
         : COMMENT_STATUS.REJECTED;
     }
-    await this.cache.del(cacheKey);
+    await invalidateCommentCacheKeyById(this.cache, comment.id);
     await this.commentRepository.save(comment);
   }
 
   async remove(id: string, user: TokenPayload): Promise<void> {
-    const cacheKey = `comment:${id}`;
     const comment = await this.commentRepository
       .createQueryBuilder("comment")
       .where("comment.id = :id", {
@@ -145,7 +121,7 @@ export class CommentsService {
     if (!isOwner && !isAdmin)
       throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN);
 
-    await this.cache.del(cacheKey);
+    await invalidateCommentCacheKeyById(this.cache, comment.id);
     await this.commentRepository.softRemove(comment);
   }
 }
